@@ -1,5 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Navigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { createItem, deleteItem, listItems, type DbItem } from "@/lib/items-api";
 import {
   HomeIcon,
   Box,
@@ -34,6 +38,8 @@ import {
   TrendingUp,
   Coins,
   AlertTriangle,
+  LogOut,
+  Trash2,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -79,6 +85,16 @@ const TABS: { key: TabKey; label: string; icon: LucideIcon }[] = [
 
 function GharLogApp() {
   const [tab, setTab] = useState<TabKey>("dash");
+  const { session, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-surface-0 text-sm text-text-muted">
+        Loading…
+      </div>
+    );
+  }
+  if (!session) return <Navigate to="/auth" />;
 
   return (
     <div className="min-h-screen bg-surface-0 text-text-primary">
@@ -121,6 +137,15 @@ function Header() {
           className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10"
         >
           <Bell className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          aria-label="Sign out"
+          title="Sign out"
+          onClick={() => supabase.auth.signOut()}
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10"
+        >
+          <LogOut className="h-4 w-4" />
         </button>
       </div>
     </header>
@@ -309,26 +334,62 @@ function QuickAction({
 }
 
 /* ------------------------- INVENTORY ------------------------- */
-function Inventory({ setTab }: { setTab: (t: TabKey) => void }) {
+function Inventory({ setTab: _setTab }: { setTab: (t: TabKey) => void }) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
   const [room, setRoom] = useState("all");
+  const [showForm, setShowForm] = useState(false);
+
+  const itemsQ = useQuery({ queryKey: ["items"], queryFn: listItems });
+
+  const delMut = useMutation({
+    mutationFn: (id: string) => deleteItem(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["items"] }),
+  });
+
+  const all = itemsQ.data ?? [];
   const filtered = useMemo(
-    () => (room === "all" ? ITEMS : ITEMS.filter((i) => i.room === room)),
-    [room],
+    () => (room === "all" ? all : all.filter((i) => i.room === room)),
+    [room, all],
   );
+  const rooms = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const it of all) counts[it.room] = (counts[it.room] ?? 0) + 1;
+    const base = [{ key: "all", label: "All", count: all.length }];
+    for (const r of ROOMS.filter((r) => r.key !== "all")) {
+      base.push({ key: r.key, label: r.label, count: counts[r.key] ?? 0 });
+    }
+    return base;
+  }, [all]);
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setTab("scan")}
-        className="mb-3 inline-flex items-center gap-1.5 rounded-xl bg-brand px-4 py-2.5 text-[12px] font-medium text-brand-foreground"
-      >
-        <Plus className="h-4 w-4" />
-        Add item
-      </button>
+      <div className="mb-3 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setShowForm((s) => !s)}
+          className="inline-flex items-center gap-1.5 rounded-xl bg-brand px-4 py-2.5 text-[12px] font-medium text-brand-foreground"
+        >
+          <Plus className="h-4 w-4" />
+          {showForm ? "Close" : "Add item"}
+        </button>
+        <span className="text-[11px] text-text-muted">
+          {itemsQ.isLoading ? "Loading…" : `${all.length} saved`}
+        </span>
+      </div>
+
+      {showForm && user && (
+        <AddItemForm
+          userId={user.id}
+          onDone={() => {
+            setShowForm(false);
+            qc.invalidateQueries({ queryKey: ["items"] });
+          }}
+        />
+      )}
 
       <div className="-mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-1">
-        {ROOMS.map((r) => {
+        {rooms.map((r) => {
           const active = room === r.key;
           return (
             <button
@@ -347,12 +408,204 @@ function Inventory({ setTab }: { setTab: (t: TabKey) => void }) {
         })}
       </div>
 
+      {itemsQ.error && (
+        <p className="mb-3 rounded-md bg-[oklch(0.96_0.04_25)] px-2.5 py-2 text-[11px] text-[oklch(0.42_0.15_25)]">
+          {(itemsQ.error as Error).message}
+        </p>
+      )}
+
+      {!itemsQ.isLoading && all.length === 0 && (
+        <div className="rounded-xl border border-dashed border-border bg-surface-2 p-6 text-center">
+          <Box className="mx-auto mb-2 h-6 w-6 text-text-muted" />
+          <p className="text-[13px] font-medium">No items yet</p>
+          <p className="mt-1 text-[11px] text-text-muted">
+            Tap “Add item” to save your first appliance, gadget or document.
+          </p>
+        </div>
+      )}
+
       <div className="space-y-2.5">
         {filtered.map((item) => (
-          <ItemCard key={item.id} item={item} />
+          <DbItemCard
+            key={item.id}
+            item={item}
+            onDelete={() => delMut.mutate(item.id)}
+            busy={delMut.isPending}
+          />
         ))}
       </div>
+
+      {all.length > 0 && (
+        <div className="mt-6">
+          <SectionTitle>Demo items (preview)</SectionTitle>
+          <div className="space-y-2.5 opacity-70">
+            {(room === "all" ? ITEMS : ITEMS.filter((i) => i.room === room)).map((item) => (
+              <ItemCard key={item.id} item={item} />
+            ))}
+          </div>
+        </div>
+      )}
     </>
+  );
+}
+
+function AddItemForm({ userId, onDone }: { userId: string; onDone: () => void }) {
+  const [name, setName] = useState("");
+  const [brand, setBrand] = useState("");
+  const [room, setRoom] = useState("kitchen");
+  const [price, setPrice] = useState("");
+  const [purchasedAt, setPurchasedAt] = useState("");
+  const [warrantyUntil, setWarrantyUntil] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+
+  const mut = useMutation({
+    mutationFn: () =>
+      createItem(
+        {
+          name,
+          brand: brand || undefined,
+          room,
+          price_paid: Number(price) || 0,
+          purchased_at: purchasedAt || null,
+          warranty_until: warrantyUntil || null,
+        },
+        userId,
+      ),
+    onSuccess: () => {
+      setName("");
+      setBrand("");
+      setPrice("");
+      setPurchasedAt("");
+      setWarrantyUntil("");
+      onDone();
+    },
+    onError: (e: unknown) => setErr(e instanceof Error ? e.message : "Could not save"),
+  });
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        setErr(null);
+        mut.mutate();
+      }}
+      className="mb-3 space-y-2 rounded-xl border border-border bg-surface-2 p-3"
+    >
+      <div className="grid grid-cols-2 gap-2">
+        <input
+          required
+          placeholder="Item name *"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="col-span-2 rounded-md border border-border bg-surface-0 px-2.5 py-2 text-[12px] outline-none focus:border-brand"
+        />
+        <input
+          placeholder="Brand"
+          value={brand}
+          onChange={(e) => setBrand(e.target.value)}
+          className="rounded-md border border-border bg-surface-0 px-2.5 py-2 text-[12px] outline-none focus:border-brand"
+        />
+        <select
+          value={room}
+          onChange={(e) => setRoom(e.target.value)}
+          className="rounded-md border border-border bg-surface-0 px-2.5 py-2 text-[12px] outline-none focus:border-brand"
+        >
+          {ROOMS.filter((r) => r.key !== "all").map((r) => (
+            <option key={r.key} value={r.key}>
+              {r.label}
+            </option>
+          ))}
+          <option value="other">Other</option>
+        </select>
+        <input
+          type="number"
+          inputMode="decimal"
+          placeholder="Price paid (₹)"
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          className="rounded-md border border-border bg-surface-0 px-2.5 py-2 text-[12px] outline-none focus:border-brand"
+        />
+        <input
+          type="date"
+          placeholder="Purchase date"
+          value={purchasedAt}
+          onChange={(e) => setPurchasedAt(e.target.value)}
+          className="rounded-md border border-border bg-surface-0 px-2.5 py-2 text-[12px] outline-none focus:border-brand"
+        />
+        <input
+          type="date"
+          placeholder="Warranty until"
+          value={warrantyUntil}
+          onChange={(e) => setWarrantyUntil(e.target.value)}
+          className="col-span-2 rounded-md border border-border bg-surface-0 px-2.5 py-2 text-[12px] outline-none focus:border-brand"
+        />
+      </div>
+      {err && (
+        <p className="rounded-md bg-[oklch(0.96_0.04_25)] px-2.5 py-1.5 text-[11px] text-[oklch(0.42_0.15_25)]">
+          {err}
+        </p>
+      )}
+      <button
+        type="submit"
+        disabled={mut.isPending}
+        className="w-full rounded-md bg-brand px-3 py-2 text-[12px] font-medium text-brand-foreground disabled:opacity-60"
+      >
+        {mut.isPending ? "Saving…" : "Save item"}
+      </button>
+    </form>
+  );
+}
+
+function DbItemCard({
+  item,
+  onDelete,
+  busy,
+}: {
+  item: DbItem;
+  onDelete: () => void;
+  busy?: boolean;
+}) {
+  const tone = ICON_TONE[(item.icon_tone as keyof typeof ICON_TONE) ?? "blue"] ?? ICON_TONE.blue;
+  const lifecycle: LifecycleStatus = item.warranty_until
+    ? new Date(item.warranty_until) > new Date()
+      ? "ok"
+      : "bad"
+    : "na";
+  return (
+    <article className="rounded-xl border border-border bg-surface-2 p-3">
+      <div className="mb-3 flex gap-3">
+        <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${tone}`}>
+          <Box className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[13px] font-medium leading-tight">{item.name}</div>
+          <div className="mt-0.5 truncate text-[11px] text-text-muted">
+            {capitalize(item.room)}
+            {item.brand ? ` · ${item.brand}` : ""}
+            {item.serial ? ` · ${item.serial}` : ""}
+          </div>
+          {item.warranty_until && (
+            <div className="mt-1.5">
+              <Badge tone={lifecycle === "ok" ? "ok" : "bad"}>
+                Warranty {lifecycle === "ok" ? "until" : "expired"} {item.warranty_until}
+              </Badge>
+            </div>
+          )}
+        </div>
+        <div className="flex flex-shrink-0 flex-col items-end gap-1.5">
+          <div className="text-[13px] font-medium tabular-nums">{inr(Number(item.price_paid))}</div>
+          <button
+            type="button"
+            onClick={onDelete}
+            disabled={busy}
+            aria-label="Delete"
+            className="rounded-md p-1 text-text-muted hover:text-bad"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+    </article>
   );
 }
 
