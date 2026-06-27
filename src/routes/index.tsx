@@ -60,6 +60,7 @@ import {
   inr,
   type LifecycleStatus,
 } from "@/lib/gharlog-data";
+import { hasSeenOnboarding } from "@/lib/onboarding-storage";
 
 export const Route = createFileRoute("/")({
   head: () => ({
