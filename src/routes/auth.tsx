@@ -213,20 +213,8 @@ function AuthPage() {
           <div className="h-px flex-1 bg-border" />
         </div>
 
-        {/* Channel switcher */}
-        <div className="mb-4 grid grid-cols-2 gap-1 rounded-lg border border-border bg-surface-0 p-1">
-
-          <button
-            type="button"
-            onClick={() => switchChannel("email")}
-            className={`flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-[12px] font-medium transition ${
-              channel === "email"
-                ? "bg-brand text-brand-foreground"
-                : "text-text-muted hover:text-text-secondary"
-            }`}
-          >
-            <Mail className="h-3.5 w-3.5" /> Email
-          </button>
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-surface-0 px-3 py-2 text-[12px] font-medium text-brand">
+          <Mail className="h-3.5 w-3.5" /> Email
         </div>
 
         {channel === "email" ? (
