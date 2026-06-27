@@ -628,7 +628,9 @@ function QuickAction({
 }
 
 /* ------------------------- INVENTORY ------------------------- */
-function Inventory({ setTab: _setTab }: { setTab: (t: TabKey) => void }) {
+function Inventory({ setTab }: { setTab: (t: TabKey) => void }) {
+  void setTab;
+
   const { user } = useAuth();
   const qc = useQueryClient();
   const [room, setRoom] = useState("all");
