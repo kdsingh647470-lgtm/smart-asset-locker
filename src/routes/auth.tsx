@@ -213,7 +213,7 @@ function AuthPage() {
           <div className="h-px flex-1 bg-border" />
         </div>
 
-        <div className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-surface-0 px-3 py-2 text-[12px] font-medium text-brand">
+        <div className="mb-4 flex items-center gap-2 rounded-lg bg-brand px-3 py-2 text-[12px] font-medium text-brand-foreground">
           <Mail className="h-3.5 w-3.5" /> Email
         </div>
 
