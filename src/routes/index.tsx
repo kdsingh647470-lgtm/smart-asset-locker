@@ -117,10 +117,11 @@ function GharLogApp() {
           {tab === "dash" && <Dashboard setTab={setTab} />}
           {tab === "inv" && <Inventory setTab={setTab} />}
           {tab === "scan" && <Scan />}
-          {tab === "locker" && <Locker />}
-          {tab === "ai" && <AIAssistant />}
-          {tab === "ins" && <Insurance />}
+          {tab === "locker" && <Locker setTab={setTab} />}
+          {tab === "ai" && <AIAssistant setTab={setTab} />}
+          {tab === "ins" && <Insurance setTab={setTab} />}
         </main>
+
       </div>
     </div>
   );
@@ -190,63 +191,34 @@ function TabBar({ tab, setTab }: { tab: TabKey; setTab: (t: TabKey) => void }) {
   );
 }
 
-/* ------------------------- EMPTY DASHBOARD ------------------------- */
-function EmptyDashboard({ setTab }: { setTab: (t: TabKey) => void }) {
+/* ------------------------- DEMO BANNER ------------------------- */
+function DemoBanner({ setTab }: { setTab: (t: TabKey) => void }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-4 pt-8 text-center">
-      <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-[oklch(0.94_0.04_255)] text-[oklch(0.36_0.13_255)]">
-        <Box className="h-10 w-10" />
-      </div>
-      <h2 className="mb-1.5 text-[20px] font-semibold text-text-primary">Your home vault is empty</h2>
-      <p className="mb-8 max-w-[280px] text-[13px] leading-relaxed text-text-muted">
-        Add your first appliance, gadget or document to start tracking warranties, renewals and value.
-      </p>
-
-      <div className="w-full max-w-[320px] space-y-2.5">
-        <button
-          type="button"
-          onClick={() => setTab("scan")}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-[14px] font-medium text-brand-foreground"
-        >
-          <ScanLine className="h-5 w-5" />
-          Scan an invoice
-        </button>
+    <div className="sticky top-0 z-10 -mx-4 -mt-4 mb-3 border-b border-accent-blue/40 bg-[oklch(0.96_0.04_255)] px-4 py-2.5">
+      <div className="flex items-center gap-2.5">
+        <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-brand text-[14px] text-brand-foreground">
+          👋
+        </span>
+        <div className="min-w-0 flex-1 text-[11px] leading-snug text-[oklch(0.32_0.13_255)]">
+          You're viewing <span className="font-semibold">sample data</span>. Add your first item to make this your home.
+        </div>
         <button
           type="button"
           onClick={() => setTab("inv")}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface-2 px-4 py-3 text-[14px] font-medium text-text-primary"
+          className="flex-shrink-0 rounded-full bg-brand px-2.5 py-1 text-[11px] font-medium text-brand-foreground"
         >
-          <Plus className="h-5 w-5" />
-          Add manually
+          + Add
         </button>
-        <button
-          type="button"
-          onClick={() => setTab("scan")}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface-2 px-4 py-3 text-[14px] font-medium text-text-primary"
-        >
-          <MailPlus className="h-5 w-5" />
-          Import from Gmail
-        </button>
-      </div>
-
-      <div className="mt-8 grid w-full max-w-[320px] grid-cols-3 gap-2">
-        <div className="rounded-xl border border-border bg-surface-2 p-3 text-center">
-          <Bell className="mx-auto mb-2 h-5 w-5 text-brand" />
-          <div className="text-[11px] font-medium text-text-primary">Reminders</div>
-          <div className="mt-0.5 text-[10px] text-text-muted">Auto alerts before expiry</div>
-        </div>
-        <div className="rounded-xl border border-border bg-surface-2 p-3 text-center">
-          <Lock className="mx-auto mb-2 h-5 w-5 text-brand" />
-          <div className="text-[11px] font-medium text-text-primary">Locker</div>
-          <div className="mt-0.5 text-[10px] text-text-muted">Encrypted document vault</div>
-        </div>
-        <div className="rounded-xl border border-border bg-surface-2 p-3 text-center">
-          <Shield className="mx-auto mb-2 h-5 w-5 text-brand" />
-          <div className="text-[11px] font-medium text-text-primary">Insurance</div>
-          <div className="mt-0.5 text-[10px] text-text-muted">Coverage gap check</div>
-        </div>
       </div>
     </div>
+  );
+}
+
+function SampleChip() {
+  return (
+    <span className="rounded-full bg-[oklch(0.95_0.03_255)] px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-[oklch(0.36_0.13_255)]">
+      Sample
+    </span>
   );
 }
 
@@ -254,14 +226,15 @@ function EmptyDashboard({ setTab }: { setTab: (t: TabKey) => void }) {
 function Dashboard({ setTab }: { setTab: (t: TabKey) => void }) {
   const itemsQ = useQuery({ queryKey: ["items"], queryFn: listItems });
   const items = itemsQ.data ?? [];
-  if (items.length === 0 && hasSeenOnboarding()) {
-    return <EmptyDashboard setTab={setTab} />;
-  }
+  const isDemo = items.length === 0;
+
   const reminders = buildReminders(items);
   const attentionCount = reminders.length;
   const fallbackAlerts = ALERTS;
   return (
     <>
+      {isDemo && <DemoBanner setTab={setTab} />}
+
       <section className="mb-3.5 rounded-2xl bg-brand p-5 text-brand-foreground">
         <p className="text-[13px] opacity-70">Good evening</p>
         <h1 className="mb-3.5 text-[20px] font-medium">Kedar's Home</h1>
@@ -655,7 +628,9 @@ function QuickAction({
 }
 
 /* ------------------------- INVENTORY ------------------------- */
-function Inventory({ setTab: _setTab }: { setTab: (t: TabKey) => void }) {
+function Inventory({ setTab }: { setTab: (t: TabKey) => void }) {
+  void setTab;
+
   const { user } = useAuth();
   const qc = useQueryClient();
   const [room, setRoom] = useState("all");
@@ -683,8 +658,11 @@ function Inventory({ setTab: _setTab }: { setTab: (t: TabKey) => void }) {
     return base;
   }, [all]);
 
+  const isDemo = !itemsQ.isLoading && all.length === 0;
+
   return (
     <>
+      {isDemo && <DemoBanner setTab={setTab} />}
       <div className="mb-3 flex items-center gap-2">
         <button
           type="button"
@@ -735,14 +713,18 @@ function Inventory({ setTab: _setTab }: { setTab: (t: TabKey) => void }) {
         </p>
       )}
 
-      {!itemsQ.isLoading && all.length === 0 && (
-        <div className="rounded-xl border border-dashed border-border bg-surface-2 p-6 text-center">
-          <Box className="mx-auto mb-2 h-6 w-6 text-text-muted" />
-          <p className="text-[13px] font-medium">No items yet</p>
-          <p className="mt-1 text-[11px] text-text-muted">
-            Tap “Add item” to save your first appliance, gadget or document.
-          </p>
-        </div>
+      {isDemo && (
+        <>
+          <div className="mb-2 flex items-center justify-between">
+            <SectionTitle>Sample inventory</SectionTitle>
+            <SampleChip />
+          </div>
+          <div className="space-y-2.5">
+            {(room === "all" ? ITEMS : ITEMS.filter((i) => i.room === room)).map((item) => (
+              <ItemCard key={item.id} item={item} />
+            ))}
+          </div>
+        </>
       )}
 
       <div className="space-y-2.5">
@@ -769,6 +751,8 @@ function Inventory({ setTab: _setTab }: { setTab: (t: TabKey) => void }) {
     </>
   );
 }
+
+
 
 function AddItemForm({ userId, onDone }: { userId: string; onDone: () => void }) {
   const [name, setName] = useState("");
@@ -1277,7 +1261,9 @@ function ScanMethod({ icon: Icon, name, sub }: { icon: LucideIcon; name: string;
 }
 
 /* ------------------------- LOCKER ------------------------- */
-function Locker() {
+function Locker({ setTab }: { setTab: (t: TabKey) => void }) {
+  const itemsQ = useQuery({ queryKey: ["items"], queryFn: listItems });
+  const isDemo = (itemsQ.data ?? []).length === 0;
   const lockerIcons: Record<string, LucideIcon> = {
     Invoices: FileCheck,
     Warranties: ShieldCheck,
@@ -1291,7 +1277,9 @@ function Locker() {
 
   return (
     <>
+      {isDemo && <DemoBanner setTab={setTab} />}
       <div className="mb-3.5 flex items-center gap-2 rounded-xl border border-[oklch(0.78_0.12_158)] bg-[oklch(0.95_0.05_158)] px-3 py-2.5">
+
         <Lock className="h-[18px] w-[18px] flex-shrink-0 text-[oklch(0.38_0.1_158)]" />
         <p className="text-[12px] leading-snug text-[oklch(0.38_0.1_158)]">
           All documents are AES-256 encrypted. Only you can access them.
@@ -1349,7 +1337,7 @@ function Locker() {
 }
 
 /* ------------------------- AI ASSISTANT ------------------------- */
-function AIAssistant() {
+function AIAssistant({ setTab }: { setTab: (t: TabKey) => void }) {
   const itemsQ = useQuery({ queryKey: ["items"], queryFn: listItems });
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -1377,8 +1365,12 @@ function AIAssistant() {
     setInput("");
   };
 
+  const isDemo = (itemsQ.data ?? []).length === 0;
+
   return (
     <div className="flex h-[calc(100vh-180px)] flex-col">
+      {isDemo && <DemoBanner setTab={setTab} />}
+
       <div className="mb-2 flex flex-wrap gap-1.5">
         {SUGGESTIONS.map((s) => (
           <button
@@ -1483,9 +1475,13 @@ function renderMd(text: string) {
 
 
 /* ------------------------- INSURANCE ------------------------- */
-function Insurance() {
+function Insurance({ setTab }: { setTab: (t: TabKey) => void }) {
+  const itemsQ = useQuery({ queryKey: ["items"], queryFn: listItems });
+  const isDemo = (itemsQ.data ?? []).length === 0;
   return (
     <>
+      {isDemo && <DemoBanner setTab={setTab} />}
+
       <section className="mb-3 rounded-2xl bg-brand p-4 text-brand-foreground">
         <h3 className="mb-3 text-[14px] font-medium opacity-90">
           Home value vs insurance coverage
