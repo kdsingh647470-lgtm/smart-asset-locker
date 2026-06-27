@@ -1,9 +1,11 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { createItem, deleteItem, listItems, type DbItem } from "@/lib/items-api";
+import { createItem, deleteItem, listItems, type DbItem, type NewItem } from "@/lib/items-api";
 import {
   HomeIcon,
   Box,
@@ -706,24 +708,162 @@ function capitalize(s: string) {
 }
 
 /* ------------------------- SCAN ------------------------- */
+type ScanResult = {
+  name: string;
+  brand: string | null;
+  serial: string | null;
+  room: string;
+  price_paid: number;
+  price_now: number;
+  purchased_at: string | null;
+  warranty_until: string | null;
+  seller: string | null;
+  confidence: "low" | "medium" | "high";
+};
+
 function Scan() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [result, setResult] = useState<ScanResult | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  async function onFile(f: File) {
+    setErr(null);
+    setResult(null);
+    setSaved(false);
+    const dataUrl: string = await new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result as string);
+      r.onerror = () => rej(r.error);
+      r.readAsDataURL(f);
+    });
+    setPreview(dataUrl);
+    setBusy(true);
+    try {
+      const resp = await fetch("/api/scan-invoice", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ imageDataUrl: dataUrl }),
+      });
+      const json = await resp.json();
+      if (!resp.ok) throw new Error(json.error ?? "Scan failed");
+      setResult(json as ScanResult);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Scan failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveScan() {
+    if (!result || !user) return;
+    const payload: NewItem = {
+      name: result.name,
+      brand: result.brand ?? undefined,
+      serial: result.serial ?? undefined,
+      room: result.room || "other",
+      price_paid: result.price_paid || 0,
+      price_now: result.price_now || result.price_paid || 0,
+      purchased_at: result.purchased_at,
+      warranty_until: result.warranty_until,
+    };
+    await createItem(payload, user.id);
+    await qc.invalidateQueries({ queryKey: ["items"] });
+    setSaved(true);
+  }
+
   return (
     <>
       <div className="mb-3 overflow-hidden rounded-xl border border-border bg-surface-2">
         <div className="bg-brand px-4 py-3.5 text-brand-foreground">
           <h3 className="text-[14px] font-medium">AI invoice scanner</h3>
           <p className="mt-1 text-[11px] leading-relaxed opacity-70">
-            Upload an invoice — GharLog extracts product, brand, model, serial number, GST, price,
-            warranty, and seller automatically.
+            Snap or upload an invoice — GharLog extracts product, brand, price, warranty &amp;
+            estimates current value automatically.
           </p>
         </div>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) onFile(f);
+          }}
+        />
         <div className="grid grid-cols-2 gap-2 p-3">
-          <ScanMethod icon={Camera} name="Camera scan" sub="Point at any invoice" />
-          <ScanMethod icon={FileUp} name="Upload PDF" sub="Invoice or e-bill" />
-          <ScanMethod icon={MailPlus} name="Gmail import" sub="Auto-detect invoices" />
-          <ScanMethod icon={QrCode} name="Scan QR label" sub="Open item instantly" />
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="rounded-xl border border-border bg-surface-1 p-3 text-center transition-colors hover:border-accent-blue hover:bg-surface-2"
+          >
+            <Camera className="mx-auto mb-1.5 h-5 w-5 text-text-secondary" />
+            <div className="text-[12px] font-medium">Camera scan</div>
+            <div className="mt-0.5 text-[10px] text-text-muted">Point at any invoice</div>
+          </button>
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="rounded-xl border border-border bg-surface-1 p-3 text-center transition-colors hover:border-accent-blue hover:bg-surface-2"
+          >
+            <FileUp className="mx-auto mb-1.5 h-5 w-5 text-text-secondary" />
+            <div className="text-[12px] font-medium">Upload image</div>
+            <div className="mt-0.5 text-[10px] text-text-muted">JPG, PNG, screenshot</div>
+          </button>
+          <ScanMethod icon={MailPlus} name="Gmail import" sub="Coming soon" />
+          <ScanMethod icon={QrCode} name="Scan QR label" sub="Coming soon" />
         </div>
       </div>
+
+      {(preview || busy || result || err) && (
+        <div className="mb-3 rounded-xl border border-border bg-surface-2 p-3">
+          {preview && (
+            <img
+              src={preview}
+              alt="Invoice"
+              className="mb-3 max-h-48 w-full rounded-lg object-contain bg-surface-1"
+            />
+          )}
+          {busy && (
+            <p className="text-[12px] text-text-muted">Reading invoice with AI…</p>
+          )}
+          {err && (
+            <p className="rounded-md bg-[oklch(0.96_0.04_25)] px-2.5 py-2 text-[11px] text-[oklch(0.42_0.15_25)]">
+              {err}
+            </p>
+          )}
+          {result && (
+            <div className="space-y-2">
+              <div className="text-[13px] font-medium">{result.name}</div>
+              <div className="text-[11px] text-text-muted">
+                {result.brand ?? "—"} · {capitalize(result.room)} · confidence {result.confidence}
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-[11px]">
+                <KV k="Paid" v={result.price_paid ? inr(result.price_paid) : "—"} />
+                <KV k="Now" v={result.price_now ? inr(result.price_now) : "—"} />
+                <KV k="Purchased" v={result.purchased_at ?? "—"} />
+                <KV k="Warranty" v={result.warranty_until ?? "—"} />
+                <KV k="Serial" v={result.serial ?? "—"} />
+                <KV k="Seller" v={result.seller ?? "—"} />
+              </div>
+              <button
+                type="button"
+                disabled={saved}
+                onClick={saveScan}
+                className="mt-1 w-full rounded-lg bg-brand px-3 py-2 text-[12px] font-medium text-brand-foreground disabled:opacity-60"
+              >
+                {saved ? "Saved to inventory ✓" : "Save to inventory"}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="mb-3 rounded-xl border border-border bg-surface-2 p-3.5">
         <div className="mb-3 flex items-center justify-between">
@@ -792,6 +932,15 @@ function Scan() {
         })}
       </div>
     </>
+  );
+}
+
+function KV({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="rounded-md border border-border bg-surface-1 px-2 py-1.5">
+      <div className="text-[9px] uppercase tracking-wider text-text-muted">{k}</div>
+      <div className="truncate text-[12px] font-medium">{v}</div>
+    </div>
   );
 }
 
@@ -881,24 +1030,31 @@ function Locker() {
 }
 
 /* ------------------------- AI ASSISTANT ------------------------- */
-type ChatMsg = { from: "user" | "ai"; text: string };
-
 function AIAssistant() {
+  const itemsQ = useQuery({ queryKey: ["items"], queryFn: listItems });
   const [input, setInput] = useState("");
-  const [log, setLog] = useState<ChatMsg[]>([
-    {
-      from: "ai",
-      text: "Namaste! Ask me anything about your home — warranties, values, service schedules, or documents. What would you like to know?",
-    },
-  ]);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: "/api/chat",
+        body: () => ({ inventory: itemsQ.data ?? [] }),
+      }),
+    [itemsQ.data],
+  );
+
+  const { messages, sendMessage, status, error } = useChat({ transport });
+  const busy = status === "submitted" || status === "streaming";
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages, busy]);
 
   const send = (text: string) => {
     const msg = text.trim();
-    if (!msg) return;
-    const reply =
-      AI_REPLIES[msg.toLowerCase()] ??
-      `I found relevant items matching "${msg}" in your home inventory. Tap any item to see the full lifecycle — invoice, warranty, service history, and insurance status.`;
-    setLog((l) => [...l, { from: "user", text: msg }, { from: "ai", text: reply }]);
+    if (!msg || busy) return;
+    void sendMessage({ text: msg });
     setInput("");
   };
 
@@ -910,34 +1066,64 @@ function AIAssistant() {
             key={s}
             type="button"
             onClick={() => send(s)}
-            className="rounded-full border border-border bg-surface-2 px-2.5 py-1 text-[11px] text-text-secondary transition-colors hover:border-accent-blue hover:text-[oklch(0.32_0.13_255)]"
+            disabled={busy}
+            className="rounded-full border border-border bg-surface-2 px-2.5 py-1 text-[11px] text-text-secondary transition-colors hover:border-accent-blue hover:text-[oklch(0.32_0.13_255)] disabled:opacity-50"
           >
             {s}
           </button>
         ))}
       </div>
 
-      <div className="flex-1 space-y-2.5 overflow-y-auto pb-2">
-        {log.map((m, i) =>
-          m.from === "user" ? (
-            <div
-              key={i}
-              className="ml-auto max-w-[85%] rounded-[12px_12px_3px_12px] bg-brand px-3 py-2.5 text-[13px] leading-relaxed text-brand-foreground"
-            >
-              {m.text}
+      <div ref={scrollRef} className="flex-1 space-y-2.5 overflow-y-auto pb-2">
+        {messages.length === 0 && (
+          <div className="mr-auto max-w-[85%] rounded-[12px_12px_12px_3px] border border-border bg-surface-2 px-3 py-2.5 text-[13px] leading-relaxed">
+            <div className="mb-1 flex items-center gap-1 text-[10px] text-text-muted">
+              <Sparkles className="h-3 w-3 text-accent-blue" />
+              GharLog AI
             </div>
-          ) : (
+            Namaste! Ask me anything about your home — warranties, values, service schedules, or
+            documents.
+          </div>
+        )}
+        {messages.map((m) => {
+          const text = m.parts
+            .map((p) => (p.type === "text" ? p.text : ""))
+            .join("");
+          if (m.role === "user") {
+            return (
+              <div
+                key={m.id}
+                className="ml-auto max-w-[85%] rounded-[12px_12px_3px_12px] bg-brand px-3 py-2.5 text-[13px] leading-relaxed text-brand-foreground"
+              >
+                {text}
+              </div>
+            );
+          }
+          return (
             <div
-              key={i}
+              key={m.id}
               className="mr-auto max-w-[85%] rounded-[12px_12px_12px_3px] border border-border bg-surface-2 px-3 py-2.5 text-[13px] leading-relaxed"
             >
               <div className="mb-1 flex items-center gap-1 text-[10px] text-text-muted">
                 <Sparkles className="h-3 w-3 text-accent-blue" />
                 GharLog AI
               </div>
-              <div className="whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: renderMd(m.text) }} />
+              <div
+                className="whitespace-pre-wrap"
+                dangerouslySetInnerHTML={{ __html: renderMd(text) }}
+              />
             </div>
-          ),
+          );
+        })}
+        {busy && (
+          <div className="mr-auto max-w-[85%] rounded-[12px_12px_12px_3px] border border-border bg-surface-2 px-3 py-2.5 text-[12px] text-text-muted">
+            Thinking…
+          </div>
+        )}
+        {error && (
+          <div className="rounded-md bg-[oklch(0.96_0.04_25)] px-2.5 py-2 text-[11px] text-[oklch(0.42_0.15_25)]">
+            {error.message}
+          </div>
         )}
       </div>
 
@@ -956,8 +1142,9 @@ function AIAssistant() {
         />
         <button
           type="submit"
+          disabled={busy}
           aria-label="Send"
-          className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand text-brand-foreground"
+          className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand text-brand-foreground disabled:opacity-60"
         >
           <Send className="h-4 w-4" />
         </button>
@@ -974,6 +1161,7 @@ function renderMd(text: string) {
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/\n/g, "<br/>");
 }
+
 
 /* ------------------------- INSURANCE ------------------------- */
 function Insurance() {
