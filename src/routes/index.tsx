@@ -942,20 +942,33 @@ function DbItemCard({
         </div>
         <div className="flex flex-shrink-0 flex-col items-end gap-1.5">
           <div className="text-[13px] font-medium tabular-nums">{inr(Number(item.price_paid))}</div>
-          <button
-            type="button"
-            onClick={onDelete}
-            disabled={busy}
-            aria-label="Delete"
-            className="rounded-md p-1 text-text-muted hover:text-bad"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
+          <div className="flex items-center gap-1">
+            {onEdit && (
+              <button
+                type="button"
+                onClick={onEdit}
+                aria-label="Edit"
+                className="rounded-md p-1 text-text-muted hover:text-brand"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onDelete}
+              disabled={busy}
+              aria-label="Delete"
+              className="rounded-md p-1 text-text-muted hover:text-bad"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
       </div>
     </article>
   );
 }
+
 
 function ItemCard({ item }: { item: (typeof ITEMS)[number] }) {
   const Icon = item.icon;
