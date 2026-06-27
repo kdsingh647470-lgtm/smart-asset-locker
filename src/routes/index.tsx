@@ -738,16 +738,6 @@ function Inventory({ setTab }: { setTab: (t: TabKey) => void }) {
         ))}
       </div>
 
-      {all.length > 0 && (
-        <div className="mt-6">
-          <SectionTitle>Demo items (preview)</SectionTitle>
-          <div className="space-y-2.5 opacity-70">
-            {(room === "all" ? ITEMS : ITEMS.filter((i) => i.room === room)).map((item) => (
-              <ItemCard key={item.id} item={item} />
-            ))}
-          </div>
-        </div>
-      )}
     </>
   );
 }
