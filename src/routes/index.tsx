@@ -240,6 +240,8 @@ function Dashboard({ setTab }: { setTab: (t: TabKey) => void }) {
 
       <ServiceMarketplace items={itemsQ.data ?? []} />
 
+      <MaintenanceCalendar items={itemsQ.data ?? []} />
+
       <SectionTitle>Quick actions</SectionTitle>
       <div className="grid grid-cols-4 gap-2">
         <QuickAction icon={ScanLine} label="Scan invoice" onClick={() => setTab("scan")} />
@@ -250,6 +252,126 @@ function Dashboard({ setTab }: { setTab: (t: TabKey) => void }) {
     </>
   );
 }
+
+/* --------------------- MAINTENANCE CALENDAR --------------------- */
+type MaintTone = "blue" | "teal" | "purple" | "amber" | "red" | "green";
+type MaintTask = { label: string; tone: MaintTone };
+
+const MONTHS = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+const DEFAULT_SCHEDULE: Record<number, MaintTask[]> = {
+  0: [{ label: "AC Service", tone: "blue" }],
+  1: [{ label: "RO Filter", tone: "teal" }],
+  2: [{ label: "Car Insurance", tone: "purple" }],
+  3: [{ label: "Pest Control", tone: "amber" }],
+  4: [{ label: "AC Deep Clean", tone: "blue" }],
+  5: [{ label: "Roof / Leak Check", tone: "red" }],
+  6: [{ label: "Geyser Service", tone: "amber" }],
+  7: [{ label: "Chimney Clean", tone: "teal" }],
+  8: [{ label: "Inverter Battery", tone: "purple" }],
+  9: [{ label: "Home Insurance", tone: "red" }],
+  10: [{ label: "Heater Service", tone: "amber" }],
+  11: [{ label: "Annual Deep Clean", tone: "green" }],
+};
+
+const TONE_STYLES: Record<MaintTone, string> = {
+  blue: "bg-[oklch(0.94_0.04_255)] text-[oklch(0.36_0.13_255)]",
+  teal: "bg-[oklch(0.94_0.05_165)] text-[oklch(0.38_0.1_165)]",
+  purple: "bg-[oklch(0.94_0.05_290)] text-[oklch(0.4_0.13_290)]",
+  amber: "bg-[oklch(0.95_0.06_85)] text-[oklch(0.42_0.1_70)]",
+  red: "bg-[oklch(0.95_0.04_25)] text-[oklch(0.45_0.15_25)]",
+  green: "bg-[oklch(0.94_0.07_158)] text-[oklch(0.38_0.13_158)]",
+};
+
+function buildSchedule(items: DbItem[]): Record<number, MaintTask[]> {
+  const sched: Record<number, MaintTask[]> = {};
+  for (let i = 0; i < 12; i++) sched[i] = [...(DEFAULT_SCHEDULE[i] ?? [])];
+
+  const push = (m: number, task: MaintTask) => {
+    if (!sched[m].some((t) => t.label === task.label)) sched[m].push(task);
+  };
+
+  for (const it of items) {
+    const dates: { d: string | null; tone: MaintTone; label: string }[] = [
+      { d: it.warranty_until, tone: "red", label: `${it.name} warranty` },
+      { d: it.amc_until, tone: "amber", label: `${it.name} AMC` },
+      { d: it.insured_until, tone: "purple", label: `${it.name} insurance` },
+    ];
+    for (const { d, tone, label } of dates) {
+      if (!d) continue;
+      const m = new Date(d + "T00:00:00").getMonth();
+      if (!Number.isNaN(m)) push(m, { label, tone });
+    }
+  }
+  return sched;
+}
+
+function MaintenanceCalendar({ items }: { items: DbItem[] }) {
+  const schedule = useMemo(() => buildSchedule(items), [items]);
+  const currentMonth = new Date().getMonth();
+
+  return (
+    <>
+      <SectionTitle>Maintenance calendar</SectionTitle>
+      <p className="-mt-1 mb-2 text-[11px] text-text-muted">
+        Your home's yearly upkeep — auto-built from inventory + recommended seasonal tasks.
+      </p>
+      <div className="grid grid-cols-2 gap-2">
+        {MONTHS.map((m, idx) => {
+          const tasks = schedule[idx];
+          const isNow = idx === currentMonth;
+          return (
+            <div
+              key={m}
+              className={`rounded-xl border p-2.5 ${
+                isNow
+                  ? "border-brand bg-brand/5"
+                  : "border-border bg-surface-2"
+              }`}
+            >
+              <div className="mb-1.5 flex items-center justify-between">
+                <span
+                  className={`text-[11px] font-semibold uppercase tracking-wider ${
+                    isNow ? "text-brand" : "text-text-secondary"
+                  }`}
+                >
+                  {m}
+                </span>
+                {isNow && (
+                  <span className="rounded-full bg-brand px-1.5 py-0.5 text-[8px] font-medium uppercase tracking-wider text-brand-foreground">
+                    Now
+                  </span>
+                )}
+              </div>
+              {tasks.length === 0 ? (
+                <p className="text-[10px] text-text-muted">No tasks</p>
+              ) : (
+                <div className="space-y-1">
+                  {tasks.slice(0, 3).map((t, i) => (
+                    <div
+                      key={i}
+                      className={`truncate rounded-md px-1.5 py-0.5 text-[10px] font-medium ${TONE_STYLES[t.tone]}`}
+                      title={t.label}
+                    >
+                      {t.label}
+                    </div>
+                  ))}
+                  {tasks.length > 3 && (
+                    <div className="text-[9px] text-text-muted">+{tasks.length - 3} more</div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
 
 /* --------------------- SERVICE MARKETPLACE --------------------- */
 type ServicePartner = { name: string; tag: string; url: string };
