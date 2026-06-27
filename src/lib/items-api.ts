@@ -77,10 +77,12 @@ export async function updateItem(
   if (patch.warranty_until !== undefined) payload.warranty_until = patch.warranty_until || null;
   const { data, error } = await supabase
     .from("items")
-    .update(payload)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .update(payload as any)
     .eq("id", id)
     .select()
     .single();
+
   if (error) throw error;
   return data as DbItem;
 }
