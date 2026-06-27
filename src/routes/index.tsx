@@ -1261,7 +1261,9 @@ function ScanMethod({ icon: Icon, name, sub }: { icon: LucideIcon; name: string;
 }
 
 /* ------------------------- LOCKER ------------------------- */
-function Locker() {
+function Locker({ setTab }: { setTab: (t: TabKey) => void }) {
+  const itemsQ = useQuery({ queryKey: ["items"], queryFn: listItems });
+  const isDemo = (itemsQ.data ?? []).length === 0;
   const lockerIcons: Record<string, LucideIcon> = {
     Invoices: FileCheck,
     Warranties: ShieldCheck,
@@ -1275,7 +1277,9 @@ function Locker() {
 
   return (
     <>
+      {isDemo && <DemoBanner setTab={setTab} />}
       <div className="mb-3.5 flex items-center gap-2 rounded-xl border border-[oklch(0.78_0.12_158)] bg-[oklch(0.95_0.05_158)] px-3 py-2.5">
+
         <Lock className="h-[18px] w-[18px] flex-shrink-0 text-[oklch(0.38_0.1_158)]" />
         <p className="text-[12px] leading-snug text-[oklch(0.38_0.1_158)]">
           All documents are AES-256 encrypted. Only you can access them.
