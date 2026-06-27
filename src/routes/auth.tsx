@@ -180,6 +180,33 @@ function AuthPage() {
           Continue with Google
         </button>
 
+        <button
+          type="button"
+          disabled={busy}
+          onClick={async () => {
+            setErr(null);
+            setInfo(null);
+            setBusy(true);
+            try {
+              const result = await lovable.auth.signInWithOAuth("apple", {
+                redirect_uri: window.location.origin,
+              });
+              if (result.error) throw result.error;
+            } catch (e: unknown) {
+              setErr(e instanceof Error ? e.message : "Apple sign-in failed");
+            } finally {
+              setBusy(false);
+            }
+          }}
+          className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg bg-black px-4 py-2.5 text-[13px] font-medium text-white transition hover:bg-neutral-800 disabled:opacity-60"
+        >
+          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M17.05 12.04c-.03-2.86 2.34-4.23 2.45-4.3-1.34-1.96-3.42-2.23-4.16-2.26-1.77-.18-3.46 1.04-4.36 1.04-.91 0-2.3-1.02-3.78-.99-1.94.03-3.74 1.13-4.74 2.86-2.02 3.5-.52 8.68 1.45 11.52.96 1.39 2.11 2.95 3.61 2.9 1.45-.06 2-.94 3.76-.94 1.75 0 2.25.94 3.78.91 1.56-.03 2.55-1.42 3.5-2.82 1.1-1.61 1.55-3.18 1.58-3.26-.03-.02-3.04-1.17-3.07-4.66zM14.2 3.57c.8-.97 1.34-2.32 1.19-3.66-1.15.05-2.55.77-3.38 1.74-.74.86-1.39 2.23-1.22 3.55 1.28.1 2.6-.65 3.41-1.63z"/>
+          </svg>
+          Continue with Apple
+        </button>
+
+
         <div className="mb-3 flex items-center gap-2">
           <div className="h-px flex-1 bg-border" />
           <span className="text-[10.5px] uppercase tracking-wider text-text-muted">or</span>
