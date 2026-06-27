@@ -117,10 +117,11 @@ function GharLogApp() {
           {tab === "dash" && <Dashboard setTab={setTab} />}
           {tab === "inv" && <Inventory setTab={setTab} />}
           {tab === "scan" && <Scan />}
-          {tab === "locker" && <Locker />}
-          {tab === "ai" && <AIAssistant />}
-          {tab === "ins" && <Insurance />}
+          {tab === "locker" && <Locker setTab={setTab} />}
+          {tab === "ai" && <AIAssistant setTab={setTab} />}
+          {tab === "ins" && <Insurance setTab={setTab} />}
         </main>
+
       </div>
     </div>
   );
