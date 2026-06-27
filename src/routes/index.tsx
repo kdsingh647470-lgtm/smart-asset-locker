@@ -43,6 +43,8 @@ import {
   AlertTriangle,
   LogOut,
   Trash2,
+  Pencil,
+
   type LucideIcon,
 } from "lucide-react";
 import {
