@@ -1475,9 +1475,13 @@ function renderMd(text: string) {
 
 
 /* ------------------------- INSURANCE ------------------------- */
-function Insurance() {
+function Insurance({ setTab }: { setTab: (t: TabKey) => void }) {
+  const itemsQ = useQuery({ queryKey: ["items"], queryFn: listItems });
+  const isDemo = (itemsQ.data ?? []).length === 0;
   return (
     <>
+      {isDemo && <DemoBanner setTab={setTab} />}
+
       <section className="mb-3 rounded-2xl bg-brand p-4 text-brand-foreground">
         <h3 className="mb-3 text-[14px] font-medium opacity-90">
           Home value vs insurance coverage
