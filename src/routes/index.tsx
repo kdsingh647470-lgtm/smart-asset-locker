@@ -1030,24 +1030,31 @@ function Locker() {
 }
 
 /* ------------------------- AI ASSISTANT ------------------------- */
-type ChatMsg = { from: "user" | "ai"; text: string };
-
 function AIAssistant() {
+  const itemsQ = useQuery({ queryKey: ["items"], queryFn: listItems });
   const [input, setInput] = useState("");
-  const [log, setLog] = useState<ChatMsg[]>([
-    {
-      from: "ai",
-      text: "Namaste! Ask me anything about your home — warranties, values, service schedules, or documents. What would you like to know?",
-    },
-  ]);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  const transport = useMemo(
+    () =>
+      new DefaultChatTransport({
+        api: "/api/chat",
+        body: () => ({ inventory: itemsQ.data ?? [] }),
+      }),
+    [itemsQ.data],
+  );
+
+  const { messages, sendMessage, status, error } = useChat({ transport });
+  const busy = status === "submitted" || status === "streaming";
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages, busy]);
 
   const send = (text: string) => {
     const msg = text.trim();
-    if (!msg) return;
-    const reply =
-      AI_REPLIES[msg.toLowerCase()] ??
-      `I found relevant items matching "${msg}" in your home inventory. Tap any item to see the full lifecycle — invoice, warranty, service history, and insurance status.`;
-    setLog((l) => [...l, { from: "user", text: msg }, { from: "ai", text: reply }]);
+    if (!msg || busy) return;
+    void sendMessage({ text: msg });
     setInput("");
   };
 
@@ -1059,34 +1066,64 @@ function AIAssistant() {
             key={s}
             type="button"
             onClick={() => send(s)}
-            className="rounded-full border border-border bg-surface-2 px-2.5 py-1 text-[11px] text-text-secondary transition-colors hover:border-accent-blue hover:text-[oklch(0.32_0.13_255)]"
+            disabled={busy}
+            className="rounded-full border border-border bg-surface-2 px-2.5 py-1 text-[11px] text-text-secondary transition-colors hover:border-accent-blue hover:text-[oklch(0.32_0.13_255)] disabled:opacity-50"
           >
             {s}
           </button>
         ))}
       </div>
 
-      <div className="flex-1 space-y-2.5 overflow-y-auto pb-2">
-        {log.map((m, i) =>
-          m.from === "user" ? (
-            <div
-              key={i}
-              className="ml-auto max-w-[85%] rounded-[12px_12px_3px_12px] bg-brand px-3 py-2.5 text-[13px] leading-relaxed text-brand-foreground"
-            >
-              {m.text}
+      <div ref={scrollRef} className="flex-1 space-y-2.5 overflow-y-auto pb-2">
+        {messages.length === 0 && (
+          <div className="mr-auto max-w-[85%] rounded-[12px_12px_12px_3px] border border-border bg-surface-2 px-3 py-2.5 text-[13px] leading-relaxed">
+            <div className="mb-1 flex items-center gap-1 text-[10px] text-text-muted">
+              <Sparkles className="h-3 w-3 text-accent-blue" />
+              GharLog AI
             </div>
-          ) : (
+            Namaste! Ask me anything about your home — warranties, values, service schedules, or
+            documents.
+          </div>
+        )}
+        {messages.map((m) => {
+          const text = m.parts
+            .map((p) => (p.type === "text" ? p.text : ""))
+            .join("");
+          if (m.role === "user") {
+            return (
+              <div
+                key={m.id}
+                className="ml-auto max-w-[85%] rounded-[12px_12px_3px_12px] bg-brand px-3 py-2.5 text-[13px] leading-relaxed text-brand-foreground"
+              >
+                {text}
+              </div>
+            );
+          }
+          return (
             <div
-              key={i}
+              key={m.id}
               className="mr-auto max-w-[85%] rounded-[12px_12px_12px_3px] border border-border bg-surface-2 px-3 py-2.5 text-[13px] leading-relaxed"
             >
               <div className="mb-1 flex items-center gap-1 text-[10px] text-text-muted">
                 <Sparkles className="h-3 w-3 text-accent-blue" />
                 GharLog AI
               </div>
-              <div className="whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: renderMd(m.text) }} />
+              <div
+                className="whitespace-pre-wrap"
+                dangerouslySetInnerHTML={{ __html: renderMd(text) }}
+              />
             </div>
-          ),
+          );
+        })}
+        {busy && (
+          <div className="mr-auto max-w-[85%] rounded-[12px_12px_12px_3px] border border-border bg-surface-2 px-3 py-2.5 text-[12px] text-text-muted">
+            Thinking…
+          </div>
+        )}
+        {error && (
+          <div className="rounded-md bg-[oklch(0.96_0.04_25)] px-2.5 py-2 text-[11px] text-[oklch(0.42_0.15_25)]">
+            {error.message}
+          </div>
         )}
       </div>
 
@@ -1105,8 +1142,9 @@ function AIAssistant() {
         />
         <button
           type="submit"
+          disabled={busy}
           aria-label="Send"
-          className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand text-brand-foreground"
+          className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-brand text-brand-foreground disabled:opacity-60"
         >
           <Send className="h-4 w-4" />
         </button>
@@ -1123,6 +1161,7 @@ function renderMd(text: string) {
     .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
     .replace(/\n/g, "<br/>");
 }
+
 
 /* ------------------------- INSURANCE ------------------------- */
 function Insurance() {
