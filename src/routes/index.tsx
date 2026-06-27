@@ -1365,8 +1365,12 @@ function AIAssistant({ setTab }: { setTab: (t: TabKey) => void }) {
     setInput("");
   };
 
+  const isDemo = (itemsQ.data ?? []).length === 0;
+
   return (
     <div className="flex h-[calc(100vh-180px)] flex-col">
+      {isDemo && <DemoBanner setTab={setTab} />}
+
       <div className="mb-2 flex flex-wrap gap-1.5">
         {SUGGESTIONS.map((s) => (
           <button
