@@ -1,37 +1,53 @@
-## Short answer
+## Goal
+Show a first-time user how GharLog works before they see the app, then present an empty-state dashboard with clear "add your first item" prompts. Once they add inventory, the dashboard seamlessly switches to the full live view (stats, alerts, reminders, calendar).
 
-I can't produce a signed `.apk` or `.aab` from inside Lovable. Generating those needs the Android SDK + Gradle + a signing keystore, which has to run on your machine (or a CI service). What I *can* do is get you 95% of the way there so the final step is a one-time, copy-paste build.
+## Plan
 
-## Your 3 realistic options (ranked by effort)
+### 1. Onboarding carousel (first install, zero items)
+- Build a 4-screen swipeable walkthrough accessible at `/onboarding`:
+  1. **"Track everything you own"** — visual of home with appliances, warranties, docs
+  2. **"Never miss a renewal"** — alert/reminder visualization
+  3. **"Scan invoices in seconds"** — camera + Gmail import demo
+  4. **"Your encrypted vault"** — locker + insurance gap visual
+- Each screen: large illustration, bold headline, 1-line subtext, dot indicator.
+- Last screen has a primary "Get Started" CTA that sets `hasSeenOnboarding = true` in localStorage and navigates to `/`.
+- Only shown if `hasSeenOnboarding` is not set AND the user has 0 items in Supabase. Skip entirely if cloud data exists.
 
-### Option 1 — PWA only (zero extra work, recommended first)
-GharLog is already an installable PWA. On Android Chrome: open the published URL → menu → "Install app". It gets an icon, splash screen, and runs full-screen exactly like a Play Store app. No APK, no Play Console, no review.
-- Effort: 0
-- Play Store listing: no
-- Good enough for: personal use, sharing with friends/family, beta testing
+### 2. Empty-state Dashboard (0 items, onboarding already seen)
+When the user lands on `/` with 0 items:
+- Hide the live stat chips and alert banners.
+- Show a friendly empty-state card:
+  - Headline: "Your home vault is empty"
+  - Subtext: "Add your first appliance, gadget, or document to start tracking warranties, renewals, and value."
+  - Three prominent CTA buttons:
+    - **"Scan an invoice"** → jumps to Scan tab
+    - **"Add manually"** → opens the existing Add Item form
+    - **"Import from Gmail"** → jumps to Scan tab (Gmail section)
+- Below CTAs: 3 small feature teaser cards (Reminders, Locker, Insurance) with icon + 1-line description so the user knows what the app does.
 
-### Option 2 — PWA wrapped via PWABuilder (lowest-effort route to a real AAB)
-Microsoft's free [pwabuilder.com](https://www.pwabuilder.com) takes your published PWA URL and generates a signed Android package (Trusted Web Activity) you can upload to Play Console directly. No code, no Android Studio.
-- Effort: ~30 min, one-time
-- You still need: a Google Play Developer account ($25 one-time) to publish
-- I will: tighten the manifest (icons at 192/512, maskable icon, screenshots, categories, shortcuts) so PWABuilder accepts it cleanly on the first try
+### 3. Populated Dashboard (>=1 item)
+- Keep the current Dashboard exactly as-is: live asset value, attention count, renewal reminders, maintenance calendar, service marketplace.
+- This becomes the default view once the first item is saved to Supabase.
 
-### Option 3 — Capacitor native wrapper (most control, most setup)
-I scaffold Capacitor in the project, you run `npx cap sync && cd android && ./gradlew bundleRelease` on your machine to produce the `.aab`. Needed only if you later want native features (push, contacts, file system, etc.).
-- Effort: install Android Studio + JDK locally, generate keystore, run build
-- I will: add Capacitor config, Android platform, app icons, splash, and a README with the exact commands
+### 4. State switching logic
+- In the Dashboard component, query the real item count from Supabase.
+- If `count === 0` and `hasSeenOnboarding === true` → render EmptyStateDashboard.
+- If `count === 0` and `hasSeenOnboarding !== true` → redirect to `/onboarding`.
+- If `count > 0` → render PopulatedDashboard (current view).
+- Persist `hasSeenOnboarding` flag in localStorage. Clearing app data resets it.
 
-## What I'd do in build mode
+### 5. Route structure
+- `/onboarding` — new route file for the tutorial carousel.
+- `/` — dashboard remains home; internal state handles empty vs populated.
+- No auth gate on `/onboarding` (public), but it checks session/item state and redirects appropriately.
 
-If you pick **Option 2** (recommended):
-1. Audit `public/manifest.webmanifest` — ensure `name`, `short_name`, `theme_color`, `background_color`, `display: standalone`, `start_url`, `scope`, `id` are all set.
-2. Add a maskable 512×512 icon and a regular 192×192 icon if missing.
-3. Add 1–2 screenshots (`form_factor: narrow`) so Play listing looks complete.
-4. Add `categories`, `shortcuts` (Scan, AI Assistant, Add Item) for nicer Android integration.
-5. Give you a step-by-step: publish → paste URL into PWABuilder → download AAB → upload to Play Console.
+## Out of scope
+- Animations beyond simple CSS transitions for the carousel.
+- Backend schema changes (uses existing `items` table).
+- Push notifications or email reminders (already handled elsewhere).
 
-If you pick **Option 3**, I'll scaffold Capacitor, add the Android platform, copy icons, and write a `BUILD_ANDROID.md` with the exact local commands.
-
-## Question for you
-
-Which route do you want? My recommendation is **Option 1 today** (free, instant) and **Option 2 when you're ready to be on the Play Store** — Option 3 only if you need native phone features later.
+## Files to create / modify
+- `src/routes/onboarding.tsx` — new onboarding route
+- `src/routes/index.tsx` — add empty-state branch and redirect logic
+- `src/lib/onboarding-storage.ts` — localStorage helper for the seen flag
+- Reuse existing `AddItemForm`, `ScanTab`, and `LockerCategoryTile` components where possible.

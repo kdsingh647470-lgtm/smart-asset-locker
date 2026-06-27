@@ -1,4 +1,4 @@
-import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useChat } from "@ai-sdk/react";
@@ -60,6 +60,7 @@ import {
   inr,
   type LifecycleStatus,
 } from "@/lib/gharlog-data";
+import { hasSeenOnboarding } from "@/lib/onboarding-storage";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -89,6 +90,14 @@ const TABS: { key: TabKey; label: string; icon: LucideIcon }[] = [
 function GharLogApp() {
   const [tab, setTab] = useState<TabKey>("dash");
   const { session, loading } = useAuth();
+  const navigate = useNavigate();
+  const itemsQ = useQuery({ queryKey: ["items"], queryFn: listItems, enabled: !!session });
+
+  useEffect(() => {
+    if (!loading && session && !itemsQ.isLoading && (itemsQ.data ?? []).length === 0 && !hasSeenOnboarding()) {
+      navigate({ to: "/onboarding" });
+    }
+  }, [loading, session, itemsQ.isLoading, itemsQ.data, navigate]);
 
   if (loading) {
     return (
@@ -181,10 +190,74 @@ function TabBar({ tab, setTab }: { tab: TabKey; setTab: (t: TabKey) => void }) {
   );
 }
 
+/* ------------------------- EMPTY DASHBOARD ------------------------- */
+function EmptyDashboard({ setTab }: { setTab: (t: TabKey) => void }) {
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center px-4 pt-8 text-center">
+      <div className="mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-[oklch(0.94_0.04_255)] text-[oklch(0.36_0.13_255)]">
+        <Box className="h-10 w-10" />
+      </div>
+      <h2 className="mb-1.5 text-[20px] font-semibold text-text-primary">Your home vault is empty</h2>
+      <p className="mb-8 max-w-[280px] text-[13px] leading-relaxed text-text-muted">
+        Add your first appliance, gadget or document to start tracking warranties, renewals and value.
+      </p>
+
+      <div className="w-full max-w-[320px] space-y-2.5">
+        <button
+          type="button"
+          onClick={() => setTab("scan")}
+          className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand px-4 py-3 text-[14px] font-medium text-brand-foreground"
+        >
+          <ScanLine className="h-5 w-5" />
+          Scan an invoice
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("inv")}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface-2 px-4 py-3 text-[14px] font-medium text-text-primary"
+        >
+          <Plus className="h-5 w-5" />
+          Add manually
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("scan")}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-surface-2 px-4 py-3 text-[14px] font-medium text-text-primary"
+        >
+          <MailPlus className="h-5 w-5" />
+          Import from Gmail
+        </button>
+      </div>
+
+      <div className="mt-8 grid w-full max-w-[320px] grid-cols-3 gap-2">
+        <div className="rounded-xl border border-border bg-surface-2 p-3 text-center">
+          <Bell className="mx-auto mb-2 h-5 w-5 text-brand" />
+          <div className="text-[11px] font-medium text-text-primary">Reminders</div>
+          <div className="mt-0.5 text-[10px] text-text-muted">Auto alerts before expiry</div>
+        </div>
+        <div className="rounded-xl border border-border bg-surface-2 p-3 text-center">
+          <Lock className="mx-auto mb-2 h-5 w-5 text-brand" />
+          <div className="text-[11px] font-medium text-text-primary">Locker</div>
+          <div className="mt-0.5 text-[10px] text-text-muted">Encrypted document vault</div>
+        </div>
+        <div className="rounded-xl border border-border bg-surface-2 p-3 text-center">
+          <Shield className="mx-auto mb-2 h-5 w-5 text-brand" />
+          <div className="text-[11px] font-medium text-text-primary">Insurance</div>
+          <div className="mt-0.5 text-[10px] text-text-muted">Coverage gap check</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ------------------------- DASHBOARD ------------------------- */
 function Dashboard({ setTab }: { setTab: (t: TabKey) => void }) {
   const itemsQ = useQuery({ queryKey: ["items"], queryFn: listItems });
-  const reminders = buildReminders(itemsQ.data ?? []);
+  const items = itemsQ.data ?? [];
+  if (items.length === 0 && hasSeenOnboarding()) {
+    return <EmptyDashboard setTab={setTab} />;
+  }
+  const reminders = buildReminders(items);
   const attentionCount = reminders.length;
   const fallbackAlerts = ALERTS;
   return (
