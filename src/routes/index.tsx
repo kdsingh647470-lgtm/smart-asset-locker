@@ -233,6 +233,8 @@ function Dashboard({ setTab }: { setTab: (t: TabKey) => void }) {
   const fallbackAlerts = ALERTS;
   return (
     <>
+      {isDemo && <DemoBanner setTab={setTab} />}
+
       <section className="mb-3.5 rounded-2xl bg-brand p-5 text-brand-foreground">
         <p className="text-[13px] opacity-70">Good evening</p>
         <h1 className="mb-3.5 text-[20px] font-medium">Kedar's Home</h1>
