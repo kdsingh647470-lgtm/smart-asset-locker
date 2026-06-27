@@ -766,6 +766,10 @@ function Inventory({ setTab }: { setTab: (t: TabKey) => void }) {
             key={item.id}
             item={item}
             onDelete={() => delMut.mutate(item.id)}
+            onEdit={() => {
+              setEditing(item);
+              setShowForm(false);
+            }}
             busy={delMut.isPending}
           />
         ))}
@@ -774,6 +778,7 @@ function Inventory({ setTab }: { setTab: (t: TabKey) => void }) {
     </>
   );
 }
+
 
 
 
