@@ -235,38 +235,61 @@ function Dashboard({ setTab }: { setTab: (t: TabKey) => void }) {
     <>
       {isDemo && <DemoBanner setTab={setTab} />}
 
-      <section className="mb-3.5 rounded-2xl bg-brand p-5 text-brand-foreground">
-        <p className="text-[13px] opacity-70">Good evening</p>
-        <h1 className="mb-3.5 text-[20px] font-medium">Kedar's Home</h1>
-        <div className="mb-3.5 grid grid-cols-2 gap-2">
-          <StatChip icon={HomeIcon} label="Home value" value="₹8,42,000" sub="34 items tracked" />
-          <StatChip
-            icon={AlertTriangle}
-            label="Needs attention"
-            value={attentionCount > 0 ? `${attentionCount} item${attentionCount === 1 ? "" : "s"}` : "All good"}
-            sub={attentionCount > 0 ? "renewals due soon" : "no expiries in 30 days"}
-            valueTone={attentionCount > 0 ? "bad" : "ok"}
-          />
-          <StatChip icon={TrendingUp} label="This month" value="4 items" sub="new purchases" />
-          <StatChip
-            icon={Coins}
-            label="Potential saving"
-            value="₹7,800"
-            sub="replace AMC"
-            valueTone="ok"
-          />
-        </div>
-        <div className="flex items-start gap-2.5 rounded-xl border border-accent-blue/40 bg-accent-blue/20 p-3">
-          <Lightbulb className="mt-0.5 h-[18px] w-[18px] flex-shrink-0 text-[oklch(0.83_0.11_255)]" />
-          <div>
-            <div className="text-[10px] font-medium text-[oklch(0.83_0.11_255)]">AI suggestion</div>
-            <p className="text-[12px] leading-relaxed text-white/90">
-              Upload your LG Microwave invoice to increase your insurance coverage by ₹18,500 and
-              unlock 2-year warranty tracking.
-            </p>
+      {isDemo ? (
+        <section className="mb-3.5 rounded-2xl bg-brand p-5 text-brand-foreground">
+          <p className="text-[13px] opacity-70">Good evening</p>
+          <h1 className="mb-3.5 text-[20px] font-medium">Kedar's Home</h1>
+          <div className="mb-3.5 grid grid-cols-2 gap-2">
+            <StatChip icon={HomeIcon} label="Home value" value="₹8,42,000" sub="34 items tracked" />
+            <StatChip
+              icon={AlertTriangle}
+              label="Needs attention"
+              value="3 items"
+              sub="renewals due soon"
+              valueTone="bad"
+            />
+            <StatChip icon={TrendingUp} label="This month" value="4 items" sub="new purchases" />
+            <StatChip
+              icon={Coins}
+              label="Potential saving"
+              value="₹7,800"
+              sub="replace AMC"
+              valueTone="ok"
+            />
           </div>
-        </div>
-      </section>
+          <div className="flex items-start gap-2.5 rounded-xl border border-accent-blue/40 bg-accent-blue/20 p-3">
+            <Lightbulb className="mt-0.5 h-[18px] w-[18px] flex-shrink-0 text-[oklch(0.83_0.11_255)]" />
+            <div>
+              <div className="text-[10px] font-medium text-[oklch(0.83_0.11_255)]">AI suggestion</div>
+              <p className="text-[12px] leading-relaxed text-white/90">
+                Upload your LG Microwave invoice to increase your insurance coverage by ₹18,500 and
+                unlock 2-year warranty tracking.
+              </p>
+            </div>
+          </div>
+        </section>
+      ) : (
+        <section className="mb-3.5 rounded-2xl bg-brand p-5 text-brand-foreground">
+          <p className="text-[13px] opacity-70">Welcome back</p>
+          <h1 className="mb-3.5 text-[20px] font-medium">Your Home</h1>
+          <div className="grid grid-cols-2 gap-2">
+            <StatChip
+              icon={HomeIcon}
+              label="Home value"
+              value={`₹${items.reduce((s, i) => s + (i.price_now ?? i.price_paid ?? 0), 0).toLocaleString("en-IN")}`}
+              sub={`${items.length} item${items.length === 1 ? "" : "s"} tracked`}
+            />
+            <StatChip
+              icon={AlertTriangle}
+              label="Needs attention"
+              value={attentionCount > 0 ? `${attentionCount} item${attentionCount === 1 ? "" : "s"}` : "All good"}
+              sub={attentionCount > 0 ? "renewals due soon" : "no expiries in 30 days"}
+              valueTone={attentionCount > 0 ? "bad" : "ok"}
+            />
+          </div>
+        </section>
+      )}
+
 
       <SectionTitle>
         {reminders.length > 0 ? "Renewal reminders" : "Today"}
@@ -738,16 +761,6 @@ function Inventory({ setTab }: { setTab: (t: TabKey) => void }) {
         ))}
       </div>
 
-      {all.length > 0 && (
-        <div className="mt-6">
-          <SectionTitle>Demo items (preview)</SectionTitle>
-          <div className="space-y-2.5 opacity-70">
-            {(room === "all" ? ITEMS : ITEMS.filter((i) => i.room === room)).map((item) => (
-              <ItemCard key={item.id} item={item} />
-            ))}
-          </div>
-        </div>
-      )}
     </>
   );
 }
