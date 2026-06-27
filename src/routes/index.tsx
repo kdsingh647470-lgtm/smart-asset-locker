@@ -782,38 +782,50 @@ function Inventory({ setTab }: { setTab: (t: TabKey) => void }) {
 
 
 
-function AddItemForm({ userId, onDone }: { userId: string; onDone: () => void }) {
-  const [name, setName] = useState("");
-  const [brand, setBrand] = useState("");
-  const [room, setRoom] = useState("kitchen");
-  const [price, setPrice] = useState("");
-  const [purchasedAt, setPurchasedAt] = useState("");
-  const [warrantyUntil, setWarrantyUntil] = useState("");
+function AddItemForm({
+  userId,
+  editing,
+  onDone,
+}: {
+  userId: string;
+  editing?: DbItem | null;
+  onDone: () => void;
+}) {
+  const [name, setName] = useState(editing?.name ?? "");
+  const [brand, setBrand] = useState(editing?.brand ?? "");
+  const [room, setRoom] = useState(editing?.room ?? "kitchen");
+  const [price, setPrice] = useState(editing ? String(editing.price_paid) : "");
+  const [purchasedAt, setPurchasedAt] = useState(editing?.purchased_at ?? "");
+  const [warrantyUntil, setWarrantyUntil] = useState(editing?.warranty_until ?? "");
   const [err, setErr] = useState<string | null>(null);
 
   const mut = useMutation({
-    mutationFn: () =>
-      createItem(
-        {
-          name,
-          brand: brand || undefined,
-          room,
-          price_paid: Number(price) || 0,
-          purchased_at: purchasedAt || null,
-          warranty_until: warrantyUntil || null,
-        },
-        userId,
-      ),
+    mutationFn: () => {
+      const payload = {
+        name,
+        brand: brand || undefined,
+        room,
+        price_paid: Number(price) || 0,
+        purchased_at: purchasedAt || null,
+        warranty_until: warrantyUntil || null,
+      };
+      return editing
+        ? updateItem(editing.id, payload)
+        : createItem(payload, userId);
+    },
     onSuccess: () => {
-      setName("");
-      setBrand("");
-      setPrice("");
-      setPurchasedAt("");
-      setWarrantyUntil("");
+      if (!editing) {
+        setName("");
+        setBrand("");
+        setPrice("");
+        setPurchasedAt("");
+        setWarrantyUntil("");
+      }
       onDone();
     },
     onError: (e: unknown) => setErr(e instanceof Error ? e.message : "Could not save"),
   });
+
 
   return (
     <form
