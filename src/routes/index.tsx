@@ -658,8 +658,11 @@ function Inventory({ setTab }: { setTab: (t: TabKey) => void }) {
     return base;
   }, [all]);
 
+  const isDemo = !itemsQ.isLoading && all.length === 0;
+
   return (
     <>
+      {isDemo && <DemoBanner setTab={setTab} />}
       <div className="mb-3 flex items-center gap-2">
         <button
           type="button"
@@ -710,14 +713,18 @@ function Inventory({ setTab }: { setTab: (t: TabKey) => void }) {
         </p>
       )}
 
-      {!itemsQ.isLoading && all.length === 0 && (
-        <div className="rounded-xl border border-dashed border-border bg-surface-2 p-6 text-center">
-          <Box className="mx-auto mb-2 h-6 w-6 text-text-muted" />
-          <p className="text-[13px] font-medium">No items yet</p>
-          <p className="mt-1 text-[11px] text-text-muted">
-            Tap “Add item” to save your first appliance, gadget or document.
-          </p>
-        </div>
+      {isDemo && (
+        <>
+          <div className="mb-2 flex items-center justify-between">
+            <SectionTitle>Sample inventory</SectionTitle>
+            <SampleChip />
+          </div>
+          <div className="space-y-2.5">
+            {(room === "all" ? ITEMS : ITEMS.filter((i) => i.room === room)).map((item) => (
+              <ItemCard key={item.id} item={item} />
+            ))}
+          </div>
+        </>
       )}
 
       <div className="space-y-2.5">
@@ -744,6 +751,8 @@ function Inventory({ setTab }: { setTab: (t: TabKey) => void }) {
     </>
   );
 }
+
+
 
 function AddItemForm({ userId, onDone }: { userId: string; onDone: () => void }) {
   const [name, setName] = useState("");
