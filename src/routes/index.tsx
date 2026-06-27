@@ -38,6 +38,8 @@ import {
   TrendingUp,
   Coins,
   AlertTriangle,
+  LogOut,
+  Trash2,
   type LucideIcon,
 } from "lucide-react";
 import {
