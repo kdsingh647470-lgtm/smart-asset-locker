@@ -1,53 +1,43 @@
 ## Goal
-Show a first-time user how GharLog works before they see the app, then present an empty-state dashboard with clear "add your first item" prompts. Once they add inventory, the dashboard seamlessly switches to the full live view (stats, alerts, reminders, calendar).
+Restore the rich demo experience for new users across Dashboard, Inventory, Locker, AI Assistant, and Insurance tabs — until they add their first real item. A persistent "Add your first item" CTA stays pinned at the top, and the demo content auto-disappears once real data exists.
 
-## Plan
+## Behaviour
 
-### 1. Onboarding carousel (first install, zero items)
-- Build a 4-screen swipeable walkthrough accessible at `/onboarding`:
-  1. **"Track everything you own"** — visual of home with appliances, warranties, docs
-  2. **"Never miss a renewal"** — alert/reminder visualization
-  3. **"Scan invoices in seconds"** — camera + Gmail import demo
-  4. **"Your encrypted vault"** — locker + insurance gap visual
-- Each screen: large illustration, bold headline, 1-line subtext, dot indicator.
-- Last screen has a primary "Get Started" CTA that sets `hasSeenOnboarding = true` in localStorage and navigates to `/`.
-- Only shown if `hasSeenOnboarding` is not set AND the user has 0 items in Supabase. Skip entirely if cloud data exists.
+- **Trigger**: `itemsQ.data.length === 0` → demo mode ON for the logged-in user.
+- **First real item added** → demo content automatically replaced by the user's real data (no manual toggle needed).
+- **Onboarding carousel** (`/onboarding`) stays as-is for first launch; this plan only affects the in-app tabs after onboarding.
 
-### 2. Empty-state Dashboard (0 items, onboarding already seen)
-When the user lands on `/` with 0 items:
-- Hide the live stat chips and alert banners.
-- Show a friendly empty-state card:
-  - Headline: "Your home vault is empty"
-  - Subtext: "Add your first appliance, gadget, or document to start tracking warranties, renewals, and value."
-  - Three prominent CTA buttons:
-    - **"Scan an invoice"** → jumps to Scan tab
-    - **"Add manually"** → opens the existing Add Item form
-    - **"Import from Gmail"** → jumps to Scan tab (Gmail section)
-- Below CTAs: 3 small feature teaser cards (Reminders, Locker, Insurance) with icon + 1-line description so the user knows what the app does.
+## Top CTA banner (all 5 tabs, demo mode only)
 
-### 3. Populated Dashboard (>=1 item)
-- Keep the current Dashboard exactly as-is: live asset value, attention count, renewal reminders, maintenance calendar, service marketplace.
-- This becomes the default view once the first item is saved to Supabase.
+A sticky banner just under the tab header:
+> 👋 You're viewing sample data. **[+ Add your first item]** to make this your home.
 
-### 4. State switching logic
-- In the Dashboard component, query the real item count from Supabase.
-- If `count === 0` and `hasSeenOnboarding === true` → render EmptyStateDashboard.
-- If `count === 0` and `hasSeenOnboarding !== true` → redirect to `/onboarding`.
-- If `count > 0` → render PopulatedDashboard (current view).
-- Persist `hasSeenOnboarding` flag in localStorage. Clearing app data resets it.
+Tapping the button on any tab opens the existing Add Item sheet. Dismissing is not allowed (it's informational, not a toast) — it disappears only when a real item exists.
 
-### 5. Route structure
-- `/onboarding` — new route file for the tutorial carousel.
-- `/` — dashboard remains home; internal state handles empty vs populated.
-- No auth gate on `/onboarding` (public), but it checks session/item state and redirects appropriately.
+## Per-tab demo content
+
+Pull from a new `src/lib/demo-data.ts` (sample Kedar household: LG AC, Samsung TV, MacBook, Bosch washing machine, Honda City, etc.).
+
+1. **Dashboard** — show the original rich view: ₹8.42L asset value, "3 need attention", ₹12K savings, AI suggestion card, 3 alert banners (AC warranty expiring, RO filter due, car insurance renewal), Service Marketplace card for an "expired" LG warranty, full Maintenance Calendar with seasonal + sample items.
+2. **Inventory** — 5–6 sample items with the 5-dot lifecycle bar (Invoice/Warranty/AMC/Insurance/Manual), purchase price + current market value with depreciation %.
+3. **Locker** — 8 category tiles (Invoices, Warranties, Insurance, Manuals, Property, IDs, Vehicle, Medical) each with a sample count badge; "Home Timeline" below with past/upcoming events.
+4. **AI Assistant** — pre-seeded suggestion chips that work against demo data ("When does my AC warranty end?", "Kitchen total value?", "All Samsung items"). Responses run through the same AI server fn but with demo inventory as context.
+5. **Insurance** — coverage gap visualiser (₹8.99L home value, ₹4L covered, ₹4.99L gap), 4 insurer partner cards, 3-tier plan comparison (Free / Pro ₹999 / Business ₹3,999).
+
+## Visual treatment
+
+Demo content rendered with a subtle "SAMPLE" chip on each card (top-right, muted brand tint) so users never confuse it with real data. Same design tokens as live UI — no separate styling.
+
+## Files
+
+- **New** `src/lib/demo-data.ts` — typed sample items, locker counts, timeline events, insurance figures.
+- **New** `src/components/demo/DemoBanner.tsx` — sticky CTA banner.
+- **New** `src/components/demo/SampleChip.tsx` — small "SAMPLE" badge.
+- **Edit** `src/routes/index.tsx` — for each of the 5 tab components, branch on `itemsQ.data.length === 0`: render demo variant + banner, else render real data view (current behaviour unchanged).
+- **Remove** the current "empty dashboard" placeholder added last turn (superseded by full demo view).
 
 ## Out of scope
-- Animations beyond simple CSS transitions for the carousel.
-- Backend schema changes (uses existing `items` table).
-- Push notifications or email reminders (already handled elsewhere).
 
-## Files to create / modify
-- `src/routes/onboarding.tsx` — new onboarding route
-- `src/routes/index.tsx` — add empty-state branch and redirect logic
-- `src/lib/onboarding-storage.ts` — localStorage helper for the seen flag
-- Reuse existing `AddItemForm`, `ScanTab`, and `LockerCategoryTile` components where possible.
+- No DB writes for demo data (purely in-memory).
+- No "reset to demo" toggle after items exist.
+- Onboarding carousel logic untouched.
