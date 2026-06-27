@@ -1,9 +1,11 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { createItem, deleteItem, listItems, type DbItem } from "@/lib/items-api";
+import { createItem, deleteItem, listItems, type DbItem, type NewItem } from "@/lib/items-api";
 import {
   HomeIcon,
   Box,
