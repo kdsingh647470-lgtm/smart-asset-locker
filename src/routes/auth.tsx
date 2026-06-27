@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Home as HomeIcon, Loader2, Mail, Smartphone } from "lucide-react";
+import { Home as HomeIcon, Loader2, Mail } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { useAuth } from "@/hooks/useAuth";
@@ -213,7 +213,7 @@ function AuthPage() {
           <div className="h-px flex-1 bg-border" />
         </div>
 
-        <div className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-surface-0 px-3 py-2 text-[12px] font-medium text-brand">
+        <div className="mb-4 flex items-center gap-2 rounded-lg bg-brand px-3 py-2 text-[12px] font-medium text-brand-foreground">
           <Mail className="h-3.5 w-3.5" /> Email
         </div>
 
