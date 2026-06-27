@@ -253,7 +253,11 @@ function EmptyDashboard({ setTab }: { setTab: (t: TabKey) => void }) {
 /* ------------------------- DASHBOARD ------------------------- */
 function Dashboard({ setTab }: { setTab: (t: TabKey) => void }) {
   const itemsQ = useQuery({ queryKey: ["items"], queryFn: listItems });
-  const reminders = buildReminders(itemsQ.data ?? []);
+  const items = itemsQ.data ?? [];
+  if (items.length === 0 && hasSeenOnboarding()) {
+    return <EmptyDashboard setTab={setTab} />;
+  }
+  const reminders = buildReminders(items);
   const attentionCount = reminders.length;
   const fallbackAlerts = ALERTS;
   return (
