@@ -238,6 +238,8 @@ function Dashboard({ setTab }: { setTab: (t: TabKey) => void }) {
         </p>
       )}
 
+      <ServiceMarketplace items={itemsQ.data ?? []} />
+
       <SectionTitle>Quick actions</SectionTitle>
       <div className="grid grid-cols-4 gap-2">
         <QuickAction icon={ScanLine} label="Scan invoice" onClick={() => setTab("scan")} />
@@ -246,6 +248,112 @@ function Dashboard({ setTab }: { setTab: (t: TabKey) => void }) {
         <QuickAction icon={Lock} label="Open locker" onClick={() => setTab("locker")} />
       </div>
     </>
+  );
+}
+
+/* --------------------- SERVICE MARKETPLACE --------------------- */
+type ServicePartner = { name: string; tag: string; url: string };
+
+function partnersFor(brand: string | null, name: string): ServicePartner[] {
+  const b = (brand ?? "").toLowerCase();
+  const n = name.toLowerCase();
+  const brandKey =
+    ["lg", "samsung", "sony", "dell", "bosch", "ifb", "whirlpool", "haier", "voltas", "daikin"].find(
+      (k) => b.includes(k) || n.includes(k),
+    ) ?? null;
+  const oem: ServicePartner = brandKey
+    ? {
+        name: `${brandKey.toUpperCase()} Service`,
+        tag: "Authorised OEM",
+        url: `https://www.google.com/search?q=${encodeURIComponent(`${brandKey} service center near me`)}`,
+      }
+    : {
+        name: "Brand Service",
+        tag: "Authorised OEM",
+        url: `https://www.google.com/search?q=${encodeURIComponent(`${brand ?? name} service center near me`)}`,
+      };
+  return [
+    {
+      name: "Urban Company",
+      tag: "Top rated",
+      url: `https://www.urbancompany.com/`,
+    },
+    oem,
+    {
+      name: "Local Technician",
+      tag: "Best price",
+      url: `https://www.justdial.com/search?q=${encodeURIComponent(`${name} repair`)}`,
+    },
+  ];
+}
+
+function ServiceMarketplace({ items }: { items: DbItem[] }) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const expired = items.filter(
+    (it) => it.warranty_until && new Date(it.warranty_until + "T00:00:00") < today,
+  );
+  if (expired.length === 0) return null;
+
+  return (
+    <>
+      <SectionTitle>Service marketplace</SectionTitle>
+      <p className="-mt-1 mb-2 text-[11px] text-text-muted">
+        Warranty expired — book a trusted partner. GharLog earns a small commission, you pay the
+        partner directly.
+      </p>
+      <div className="space-y-3">
+        {expired.map((it) => (
+          <ServiceCard key={it.id} item={it} />
+        ))}
+      </div>
+    </>
+  );
+}
+
+function ServiceCard({ item }: { item: DbItem }) {
+  const partners = partnersFor(item.brand, item.name);
+  return (
+    <div className="rounded-xl border border-border bg-surface-2 p-3">
+      <div className="mb-2 flex items-start justify-between gap-2">
+        <div>
+          <div className="text-[13px] font-medium leading-tight">{item.name}</div>
+          <div className="mt-0.5 text-[11px] text-text-muted">
+            {item.brand ?? "—"} · {item.room}
+          </div>
+        </div>
+        <span className="inline-flex items-center gap-1 rounded-full bg-[oklch(0.96_0.04_25)] px-2 py-0.5 text-[10px] font-medium text-[oklch(0.42_0.15_25)]">
+          <AlertCircle className="h-3 w-3" />
+          Warranty expired
+        </span>
+      </div>
+      <div className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-text-muted">
+        Recommended partners
+      </div>
+      <div className="grid grid-cols-3 gap-1.5">
+        {partners.map((p) => (
+          <a
+            key={p.name}
+            href={p.url}
+            target="_blank"
+            rel="noreferrer"
+            className="flex flex-col items-start gap-0.5 rounded-lg border border-border bg-surface-0 p-2 transition-colors hover:border-brand"
+          >
+            <span className="text-[11px] font-medium leading-tight">{p.name}</span>
+            <span className="text-[9px] text-text-muted">{p.tag}</span>
+          </a>
+        ))}
+      </div>
+      <a
+        href={partners[0].url}
+        target="_blank"
+        rel="noreferrer"
+        className="mt-2 flex items-center justify-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-[12px] font-medium text-brand-foreground"
+      >
+        <Wrench className="h-4 w-4" />
+        Book now
+      </a>
+    </div>
   );
 }
 
