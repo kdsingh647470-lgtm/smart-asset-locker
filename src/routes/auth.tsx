@@ -227,17 +227,6 @@ function AuthPage() {
           >
             <Mail className="h-3.5 w-3.5" /> Email
           </button>
-          <button
-            type="button"
-            onClick={() => switchChannel("phone")}
-            className={`flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-[12px] font-medium transition ${
-              channel === "phone"
-                ? "bg-brand text-brand-foreground"
-                : "text-text-muted hover:text-text-secondary"
-            }`}
-          >
-            <Smartphone className="h-3.5 w-3.5" /> Mobile OTP
-          </button>
         </div>
 
         {channel === "email" ? (
