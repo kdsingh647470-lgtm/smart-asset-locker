@@ -90,6 +90,14 @@ const TABS: { key: TabKey; label: string; icon: LucideIcon }[] = [
 function GharLogApp() {
   const [tab, setTab] = useState<TabKey>("dash");
   const { session, loading } = useAuth();
+  const navigate = useNavigate();
+  const itemsQ = useQuery({ queryKey: ["items"], queryFn: listItems, enabled: !!session });
+
+  useEffect(() => {
+    if (!loading && session && !itemsQ.isLoading && (itemsQ.data ?? []).length === 0 && !hasSeenOnboarding()) {
+      navigate({ to: "/onboarding" });
+    }
+  }, [loading, session, itemsQ.isLoading, itemsQ.data, navigate]);
 
   if (loading) {
     return (
