@@ -83,6 +83,16 @@ const TABS: { key: TabKey; label: string; icon: LucideIcon }[] = [
 
 function GharLogApp() {
   const [tab, setTab] = useState<TabKey>("dash");
+  const { session, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-surface-0 text-sm text-text-muted">
+        Loading…
+      </div>
+    );
+  }
+  if (!session) return <Navigate to="/auth" />;
 
   return (
     <div className="min-h-screen bg-surface-0 text-text-primary">
@@ -125,6 +135,15 @@ function Header() {
           className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10"
         >
           <Bell className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          aria-label="Sign out"
+          title="Sign out"
+          onClick={() => supabase.auth.signOut()}
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10"
+        >
+          <LogOut className="h-4 w-4" />
         </button>
       </div>
     </header>
