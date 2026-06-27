@@ -183,6 +183,10 @@ function TabBar({ tab, setTab }: { tab: TabKey; setTab: (t: TabKey) => void }) {
 
 /* ------------------------- DASHBOARD ------------------------- */
 function Dashboard({ setTab }: { setTab: (t: TabKey) => void }) {
+  const itemsQ = useQuery({ queryKey: ["items"], queryFn: listItems });
+  const reminders = buildReminders(itemsQ.data ?? []);
+  const attentionCount = reminders.length;
+  const fallbackAlerts = ALERTS;
   return (
     <>
       <section className="mb-3.5 rounded-2xl bg-brand p-5 text-brand-foreground">
@@ -193,9 +197,9 @@ function Dashboard({ setTab }: { setTab: (t: TabKey) => void }) {
           <StatChip
             icon={AlertTriangle}
             label="Needs attention"
-            value="3 items"
-            sub="warranty expiring"
-            valueTone="bad"
+            value={attentionCount > 0 ? `${attentionCount} item${attentionCount === 1 ? "" : "s"}` : "All good"}
+            sub={attentionCount > 0 ? "renewals due soon" : "no expiries in 30 days"}
+            valueTone={attentionCount > 0 ? "bad" : "ok"}
           />
           <StatChip icon={TrendingUp} label="This month" value="4 items" sub="new purchases" />
           <StatChip
@@ -218,11 +222,21 @@ function Dashboard({ setTab }: { setTab: (t: TabKey) => void }) {
         </div>
       </section>
 
+      <SectionTitle>
+        {reminders.length > 0 ? "Renewal reminders" : "Today"}
+      </SectionTitle>
       <div className="space-y-2.5">
-        {ALERTS.map((a, i) => (
-          <AlertBanner key={i} {...a} />
-        ))}
+        {reminders.length > 0
+          ? reminders.map((r) => (
+              <AlertBanner key={r.id} tone={r.tone} title={r.title} body={r.body} />
+            ))
+          : fallbackAlerts.map((a, i) => <AlertBanner key={i} {...a} />)}
       </div>
+      {reminders.length > 0 && (
+        <p className="mt-2 text-[11px] text-text-muted">
+          Auto-tracked from your inventory · alerts at 30, 7 and 1 days before expiry
+        </p>
+      )}
 
       <SectionTitle>Quick actions</SectionTitle>
       <div className="grid grid-cols-4 gap-2">
@@ -234,6 +248,7 @@ function Dashboard({ setTab }: { setTab: (t: TabKey) => void }) {
     </>
   );
 }
+
 
 function StatChip({
   icon: Icon,
