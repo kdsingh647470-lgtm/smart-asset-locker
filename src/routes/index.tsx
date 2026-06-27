@@ -708,24 +708,162 @@ function capitalize(s: string) {
 }
 
 /* ------------------------- SCAN ------------------------- */
+type ScanResult = {
+  name: string;
+  brand: string | null;
+  serial: string | null;
+  room: string;
+  price_paid: number;
+  price_now: number;
+  purchased_at: string | null;
+  warranty_until: string | null;
+  seller: string | null;
+  confidence: "low" | "medium" | "high";
+};
+
 function Scan() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [result, setResult] = useState<ScanResult | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  async function onFile(f: File) {
+    setErr(null);
+    setResult(null);
+    setSaved(false);
+    const dataUrl: string = await new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result as string);
+      r.onerror = () => rej(r.error);
+      r.readAsDataURL(f);
+    });
+    setPreview(dataUrl);
+    setBusy(true);
+    try {
+      const resp = await fetch("/api/scan-invoice", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ imageDataUrl: dataUrl }),
+      });
+      const json = await resp.json();
+      if (!resp.ok) throw new Error(json.error ?? "Scan failed");
+      setResult(json as ScanResult);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Scan failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveScan() {
+    if (!result || !user) return;
+    const payload: NewItem = {
+      name: result.name,
+      brand: result.brand ?? undefined,
+      serial: result.serial ?? undefined,
+      room: result.room || "other",
+      price_paid: result.price_paid || 0,
+      price_now: result.price_now || result.price_paid || 0,
+      purchased_at: result.purchased_at,
+      warranty_until: result.warranty_until,
+    };
+    await createItem(payload, user.id);
+    await qc.invalidateQueries({ queryKey: ["items"] });
+    setSaved(true);
+  }
+
   return (
     <>
       <div className="mb-3 overflow-hidden rounded-xl border border-border bg-surface-2">
         <div className="bg-brand px-4 py-3.5 text-brand-foreground">
           <h3 className="text-[14px] font-medium">AI invoice scanner</h3>
           <p className="mt-1 text-[11px] leading-relaxed opacity-70">
-            Upload an invoice — GharLog extracts product, brand, model, serial number, GST, price,
-            warranty, and seller automatically.
+            Snap or upload an invoice — GharLog extracts product, brand, price, warranty &amp;
+            estimates current value automatically.
           </p>
         </div>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) onFile(f);
+          }}
+        />
         <div className="grid grid-cols-2 gap-2 p-3">
-          <ScanMethod icon={Camera} name="Camera scan" sub="Point at any invoice" />
-          <ScanMethod icon={FileUp} name="Upload PDF" sub="Invoice or e-bill" />
-          <ScanMethod icon={MailPlus} name="Gmail import" sub="Auto-detect invoices" />
-          <ScanMethod icon={QrCode} name="Scan QR label" sub="Open item instantly" />
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="rounded-xl border border-border bg-surface-1 p-3 text-center transition-colors hover:border-accent-blue hover:bg-surface-2"
+          >
+            <Camera className="mx-auto mb-1.5 h-5 w-5 text-text-secondary" />
+            <div className="text-[12px] font-medium">Camera scan</div>
+            <div className="mt-0.5 text-[10px] text-text-muted">Point at any invoice</div>
+          </button>
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="rounded-xl border border-border bg-surface-1 p-3 text-center transition-colors hover:border-accent-blue hover:bg-surface-2"
+          >
+            <FileUp className="mx-auto mb-1.5 h-5 w-5 text-text-secondary" />
+            <div className="text-[12px] font-medium">Upload image</div>
+            <div className="mt-0.5 text-[10px] text-text-muted">JPG, PNG, screenshot</div>
+          </button>
+          <ScanMethod icon={MailPlus} name="Gmail import" sub="Coming soon" />
+          <ScanMethod icon={QrCode} name="Scan QR label" sub="Coming soon" />
         </div>
       </div>
+
+      {(preview || busy || result || err) && (
+        <div className="mb-3 rounded-xl border border-border bg-surface-2 p-3">
+          {preview && (
+            <img
+              src={preview}
+              alt="Invoice"
+              className="mb-3 max-h-48 w-full rounded-lg object-contain bg-surface-1"
+            />
+          )}
+          {busy && (
+            <p className="text-[12px] text-text-muted">Reading invoice with AI…</p>
+          )}
+          {err && (
+            <p className="rounded-md bg-[oklch(0.96_0.04_25)] px-2.5 py-2 text-[11px] text-[oklch(0.42_0.15_25)]">
+              {err}
+            </p>
+          )}
+          {result && (
+            <div className="space-y-2">
+              <div className="text-[13px] font-medium">{result.name}</div>
+              <div className="text-[11px] text-text-muted">
+                {result.brand ?? "—"} · {capitalize(result.room)} · confidence {result.confidence}
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-[11px]">
+                <KV k="Paid" v={result.price_paid ? inr(result.price_paid) : "—"} />
+                <KV k="Now" v={result.price_now ? inr(result.price_now) : "—"} />
+                <KV k="Purchased" v={result.purchased_at ?? "—"} />
+                <KV k="Warranty" v={result.warranty_until ?? "—"} />
+                <KV k="Serial" v={result.serial ?? "—"} />
+                <KV k="Seller" v={result.seller ?? "—"} />
+              </div>
+              <button
+                type="button"
+                disabled={saved}
+                onClick={saveScan}
+                className="mt-1 w-full rounded-lg bg-brand px-3 py-2 text-[12px] font-medium text-brand-foreground disabled:opacity-60"
+              >
+                {saved ? "Saved to inventory ✓" : "Save to inventory"}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="mb-3 rounded-xl border border-border bg-surface-2 p-3.5">
         <div className="mb-3 flex items-center justify-between">
@@ -794,6 +932,15 @@ function Scan() {
         })}
       </div>
     </>
+  );
+}
+
+function KV({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="rounded-md border border-border bg-surface-1 px-2 py-1.5">
+      <div className="text-[9px] uppercase tracking-wider text-text-muted">{k}</div>
+      <div className="truncate text-[12px] font-medium">{v}</div>
+    </div>
   );
 }
 
