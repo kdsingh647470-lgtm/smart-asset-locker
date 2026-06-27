@@ -5,7 +5,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { createItem, deleteItem, listItems, type DbItem, type NewItem } from "@/lib/items-api";
+import { createItem, deleteItem, listItems, updateItem, type DbItem, type NewItem } from "@/lib/items-api";
 import { buildReminders } from "@/lib/reminders";
 import {
   HomeIcon,
@@ -43,6 +43,8 @@ import {
   AlertTriangle,
   LogOut,
   Trash2,
+  Pencil,
+
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -658,6 +660,7 @@ function Inventory({ setTab }: { setTab: (t: TabKey) => void }) {
   const qc = useQueryClient();
   const [room, setRoom] = useState("all");
   const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<DbItem | null>(null);
 
   const itemsQ = useQuery({ queryKey: ["items"], queryFn: listItems });
 
@@ -682,6 +685,7 @@ function Inventory({ setTab }: { setTab: (t: TabKey) => void }) {
   }, [all]);
 
   const isDemo = !itemsQ.isLoading && all.length === 0;
+  const formOpen = showForm || editing !== null;
 
   return (
     <>
@@ -689,26 +693,32 @@ function Inventory({ setTab }: { setTab: (t: TabKey) => void }) {
       <div className="mb-3 flex items-center gap-2">
         <button
           type="button"
-          onClick={() => setShowForm((s) => !s)}
+          onClick={() => {
+            setEditing(null);
+            setShowForm((s) => !s);
+          }}
           className="inline-flex items-center gap-1.5 rounded-xl bg-brand px-4 py-2.5 text-[12px] font-medium text-brand-foreground"
         >
           <Plus className="h-4 w-4" />
-          {showForm ? "Close" : "Add item"}
+          {formOpen ? "Close" : "Add item"}
         </button>
         <span className="text-[11px] text-text-muted">
           {itemsQ.isLoading ? "Loading…" : `${all.length} saved`}
         </span>
       </div>
 
-      {showForm && user && (
+      {formOpen && user && (
         <AddItemForm
           userId={user.id}
+          editing={editing}
           onDone={() => {
             setShowForm(false);
+            setEditing(null);
             qc.invalidateQueries({ queryKey: ["items"] });
           }}
         />
       )}
+
 
       <div className="-mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-1">
         {rooms.map((r) => {
@@ -756,6 +766,10 @@ function Inventory({ setTab }: { setTab: (t: TabKey) => void }) {
             key={item.id}
             item={item}
             onDelete={() => delMut.mutate(item.id)}
+            onEdit={() => {
+              setEditing(item);
+              setShowForm(false);
+            }}
             busy={delMut.isPending}
           />
         ))}
@@ -767,38 +781,51 @@ function Inventory({ setTab }: { setTab: (t: TabKey) => void }) {
 
 
 
-function AddItemForm({ userId, onDone }: { userId: string; onDone: () => void }) {
-  const [name, setName] = useState("");
-  const [brand, setBrand] = useState("");
-  const [room, setRoom] = useState("kitchen");
-  const [price, setPrice] = useState("");
-  const [purchasedAt, setPurchasedAt] = useState("");
-  const [warrantyUntil, setWarrantyUntil] = useState("");
+
+function AddItemForm({
+  userId,
+  editing,
+  onDone,
+}: {
+  userId: string;
+  editing?: DbItem | null;
+  onDone: () => void;
+}) {
+  const [name, setName] = useState(editing?.name ?? "");
+  const [brand, setBrand] = useState(editing?.brand ?? "");
+  const [room, setRoom] = useState(editing?.room ?? "kitchen");
+  const [price, setPrice] = useState(editing ? String(editing.price_paid) : "");
+  const [purchasedAt, setPurchasedAt] = useState(editing?.purchased_at ?? "");
+  const [warrantyUntil, setWarrantyUntil] = useState(editing?.warranty_until ?? "");
   const [err, setErr] = useState<string | null>(null);
 
   const mut = useMutation({
-    mutationFn: () =>
-      createItem(
-        {
-          name,
-          brand: brand || undefined,
-          room,
-          price_paid: Number(price) || 0,
-          purchased_at: purchasedAt || null,
-          warranty_until: warrantyUntil || null,
-        },
-        userId,
-      ),
+    mutationFn: () => {
+      const payload = {
+        name,
+        brand: brand || undefined,
+        room,
+        price_paid: Number(price) || 0,
+        purchased_at: purchasedAt || null,
+        warranty_until: warrantyUntil || null,
+      };
+      return editing
+        ? updateItem(editing.id, payload)
+        : createItem(payload, userId);
+    },
     onSuccess: () => {
-      setName("");
-      setBrand("");
-      setPrice("");
-      setPurchasedAt("");
-      setWarrantyUntil("");
+      if (!editing) {
+        setName("");
+        setBrand("");
+        setPrice("");
+        setPurchasedAt("");
+        setWarrantyUntil("");
+      }
       onDone();
     },
     onError: (e: unknown) => setErr(e instanceof Error ? e.message : "Could not save"),
   });
+
 
   return (
     <form
@@ -868,7 +895,7 @@ function AddItemForm({ userId, onDone }: { userId: string; onDone: () => void })
         disabled={mut.isPending}
         className="w-full rounded-md bg-brand px-3 py-2 text-[12px] font-medium text-brand-foreground disabled:opacity-60"
       >
-        {mut.isPending ? "Saving…" : "Save item"}
+        {mut.isPending ? "Saving…" : editing ? "Update item" : "Save item"}
       </button>
     </form>
   );
@@ -877,12 +904,15 @@ function AddItemForm({ userId, onDone }: { userId: string; onDone: () => void })
 function DbItemCard({
   item,
   onDelete,
+  onEdit,
   busy,
 }: {
   item: DbItem;
   onDelete: () => void;
+  onEdit?: () => void;
   busy?: boolean;
 }) {
+
   const tone = ICON_TONE[(item.icon_tone as keyof typeof ICON_TONE) ?? "blue"] ?? ICON_TONE.blue;
   const lifecycle: LifecycleStatus = item.warranty_until
     ? new Date(item.warranty_until) > new Date()
@@ -912,20 +942,33 @@ function DbItemCard({
         </div>
         <div className="flex flex-shrink-0 flex-col items-end gap-1.5">
           <div className="text-[13px] font-medium tabular-nums">{inr(Number(item.price_paid))}</div>
-          <button
-            type="button"
-            onClick={onDelete}
-            disabled={busy}
-            aria-label="Delete"
-            className="rounded-md p-1 text-text-muted hover:text-bad"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
+          <div className="flex items-center gap-1">
+            {onEdit && (
+              <button
+                type="button"
+                onClick={onEdit}
+                aria-label="Edit"
+                className="rounded-md p-1 text-text-muted hover:text-brand"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onDelete}
+              disabled={busy}
+              aria-label="Delete"
+              className="rounded-md p-1 text-text-muted hover:text-bad"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
         </div>
       </div>
     </article>
   );
 }
+
 
 function ItemCard({ item }: { item: (typeof ITEMS)[number] }) {
   const Icon = item.icon;

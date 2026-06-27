@@ -62,7 +62,33 @@ export async function createItem(input: NewItem, userId: string): Promise<DbItem
   return data as DbItem;
 }
 
+export async function updateItem(
+  id: string,
+  patch: Partial<NewItem>,
+): Promise<DbItem> {
+  const payload: Record<string, unknown> = {};
+  if (patch.name !== undefined) payload.name = patch.name;
+  if (patch.brand !== undefined) payload.brand = patch.brand || null;
+  if (patch.serial !== undefined) payload.serial = patch.serial || null;
+  if (patch.room !== undefined) payload.room = patch.room;
+  if (patch.price_paid !== undefined) payload.price_paid = patch.price_paid;
+  if (patch.price_now !== undefined) payload.price_now = patch.price_now;
+  if (patch.purchased_at !== undefined) payload.purchased_at = patch.purchased_at || null;
+  if (patch.warranty_until !== undefined) payload.warranty_until = patch.warranty_until || null;
+  const { data, error } = await supabase
+    .from("items")
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .update(payload as any)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data as DbItem;
+}
+
 export async function deleteItem(id: string): Promise<void> {
   const { error } = await supabase.from("items").delete().eq("id", id);
   if (error) throw error;
 }
+
