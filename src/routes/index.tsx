@@ -276,7 +276,7 @@ function Dashboard({ setTab }: { setTab: (t: TabKey) => void }) {
             <StatChip
               icon={HomeIcon}
               label="Home value"
-              value={`₹${items.reduce((s, i) => s + (i.price ?? 0), 0).toLocaleString("en-IN")}`}
+              value={`₹${items.reduce((s, i) => s + (i.price_now ?? i.price_paid ?? 0), 0).toLocaleString("en-IN")}`}
               sub={`${items.length} item${items.length === 1 ? "" : "s"} tracked`}
             />
             <StatChip
