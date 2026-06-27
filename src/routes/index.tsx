@@ -1337,7 +1337,7 @@ function Locker({ setTab }: { setTab: (t: TabKey) => void }) {
 }
 
 /* ------------------------- AI ASSISTANT ------------------------- */
-function AIAssistant() {
+function AIAssistant({ setTab }: { setTab: (t: TabKey) => void }) {
   const itemsQ = useQuery({ queryKey: ["items"], queryFn: listItems });
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement | null>(null);
