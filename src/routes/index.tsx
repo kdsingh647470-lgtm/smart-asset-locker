@@ -6,6 +6,7 @@ import { DefaultChatTransport } from "ai";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { createItem, deleteItem, listItems, type DbItem, type NewItem } from "@/lib/items-api";
+import { buildReminders } from "@/lib/reminders";
 import {
   HomeIcon,
   Box,
