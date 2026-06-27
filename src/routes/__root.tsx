@@ -95,11 +95,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:title", content: "GharLog — India's Digital Home Asset Manager" },
-      { name: "description", content: "Home Vault Pro is an AI-powered digital asset manager for your home and personal documents." },
-      { property: "og:description", content: "Home Vault Pro is an AI-powered digital asset manager for your home and personal documents." },
-      { name: "twitter:description", content: "Home Vault Pro is an AI-powered digital asset manager for your home and personal documents." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d2b5be45-7691-4d46-9df8-6f6f14cd9906/id-preview-8bea2a00--c8919573-48a0-4dc1-9246-0e16d4f87bfe.lovable.app-1782590544439.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d2b5be45-7691-4d46-9df8-6f6f14cd9906/id-preview-8bea2a00--c8919573-48a0-4dc1-9246-0e16d4f87bfe.lovable.app-1782590544439.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
