@@ -895,7 +895,7 @@ function AddItemForm({
         disabled={mut.isPending}
         className="w-full rounded-md bg-brand px-3 py-2 text-[12px] font-medium text-brand-foreground disabled:opacity-60"
       >
-        {mut.isPending ? "Saving…" : "Save item"}
+        {mut.isPending ? "Saving…" : editing ? "Update item" : "Save item"}
       </button>
     </form>
   );
