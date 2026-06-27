@@ -904,12 +904,15 @@ function AddItemForm({
 function DbItemCard({
   item,
   onDelete,
+  onEdit,
   busy,
 }: {
   item: DbItem;
   onDelete: () => void;
+  onEdit?: () => void;
   busy?: boolean;
 }) {
+
   const tone = ICON_TONE[(item.icon_tone as keyof typeof ICON_TONE) ?? "blue"] ?? ICON_TONE.blue;
   const lifecycle: LifecycleStatus = item.warranty_until
     ? new Date(item.warranty_until) > new Date()
