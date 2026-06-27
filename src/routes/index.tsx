@@ -660,6 +660,7 @@ function Inventory({ setTab }: { setTab: (t: TabKey) => void }) {
   const qc = useQueryClient();
   const [room, setRoom] = useState("all");
   const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<DbItem | null>(null);
 
   const itemsQ = useQuery({ queryKey: ["items"], queryFn: listItems });
 
@@ -684,6 +685,7 @@ function Inventory({ setTab }: { setTab: (t: TabKey) => void }) {
   }, [all]);
 
   const isDemo = !itemsQ.isLoading && all.length === 0;
+  const formOpen = showForm || editing !== null;
 
   return (
     <>
@@ -691,26 +693,32 @@ function Inventory({ setTab }: { setTab: (t: TabKey) => void }) {
       <div className="mb-3 flex items-center gap-2">
         <button
           type="button"
-          onClick={() => setShowForm((s) => !s)}
+          onClick={() => {
+            setEditing(null);
+            setShowForm((s) => !s);
+          }}
           className="inline-flex items-center gap-1.5 rounded-xl bg-brand px-4 py-2.5 text-[12px] font-medium text-brand-foreground"
         >
           <Plus className="h-4 w-4" />
-          {showForm ? "Close" : "Add item"}
+          {formOpen ? "Close" : "Add item"}
         </button>
         <span className="text-[11px] text-text-muted">
           {itemsQ.isLoading ? "Loading…" : `${all.length} saved`}
         </span>
       </div>
 
-      {showForm && user && (
+      {formOpen && user && (
         <AddItemForm
           userId={user.id}
+          editing={editing}
           onDone={() => {
             setShowForm(false);
+            setEditing(null);
             qc.invalidateQueries({ queryKey: ["items"] });
           }}
         />
       )}
+
 
       <div className="-mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-1">
         {rooms.map((r) => {
