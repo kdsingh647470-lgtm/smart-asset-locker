@@ -1518,7 +1518,7 @@ function Scan() {
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement | null>(null);
   const uploadRef = useRef<HTMLInputElement | null>(null);
-  const [docType, setDocType] = useState<DocType>("invoice");
+  const [docType, setDocType] = useState<ScanDocType>("any");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [dataUrl, setDataUrl] = useState<string | null>(null);
