@@ -1,43 +1,61 @@
 ## Goal
-Restore the rich demo experience for new users across Dashboard, Inventory, Locker, AI Assistant, and Insurance tabs — until they add their first real item. A persistent "Add your first item" CTA stays pinned at the top, and the demo content auto-disappears once real data exists.
+Make the Maintenance Calendar on the Dashboard fully editable — users can add, edit, mark done, or delete tasks per month — and persist them per user. Add a few high-impact upgrades that turn it from a static reminder into a real maintenance log.
 
-## Behaviour
+## 1. Editable calendar (core)
 
-- **Trigger**: `itemsQ.data.length === 0` → demo mode ON for the logged-in user.
-- **First real item added** → demo content automatically replaced by the user's real data (no manual toggle needed).
-- **Onboarding carousel** (`/onboarding`) stays as-is for first launch; this plan only affects the in-app tabs after onboarding.
+### Storage
+New table `public.maintenance_tasks`:
+- `user_id` (uuid)
+- `month` (smallint 0–11) — used when the task repeats yearly with no fixed date
+- `due_date` (date, nullable) — if set, takes precedence; the month chip is derived from it
+- `label` (text)
+- `tone` (text: blue / teal / purple / amber / red / green)
+- `recurrence` (text: `none` | `yearly` | `quarterly` | `monthly`)
+- `linked_item_id` (uuid, nullable → `items.id`) — for tasks auto-tied to an appliance
+- `done_at` (timestamptz, nullable) — last completion
+- `notes` (text, nullable)
 
-## Top CTA banner (all 5 tabs, demo mode only)
+RLS scoped to `auth.uid()`, grants for `authenticated` + `service_role`, `updated_at` trigger.
 
-A sticky banner just under the tab header:
-> 👋 You're viewing sample data. **[+ Add your first item]** to make this your home.
+### UI changes on the calendar card
+- Each month tile becomes tappable → opens a bottom sheet listing all tasks for that month with: ✓ done toggle, ✎ edit, 🗑 delete.
+- "+ Add task" button at the bottom of the sheet (label, tone, optional exact date, recurrence, notes).
+- Tasks now show a small ✓ when completed this cycle (greyed out), or a red dot if past-due.
+- Long-press / swipe a chip in the grid view to quick-toggle "done".
+- First-time users get the existing `DEFAULT_SCHEDULE` seeded into their table on first open (one-time, idempotent via a marker row or count check) so they can edit instead of being stuck with read-only defaults.
+- Auto-derived tasks from `items` (warranty/AMC/insurance) keep appearing but are visually marked "Auto" and editing them creates an override row in `maintenance_tasks` linked via `linked_item_id`.
 
-Tapping the button on any tab opens the existing Add Item sheet. Dismissing is not allowed (it's informational, not a toast) — it disappears only when a real item exists.
+### Files
+- **New migration** — `maintenance_tasks` table + RLS + grants + trigger.
+- **New** `src/lib/maintenance-api.ts` — list / create / update / toggleDone / delete.
+- **Edit** `src/routes/index.tsx` — replace static `MaintenanceCalendar` with a query-driven version + month sheet (`MonthTasksSheet`) + add/edit form (`TaskForm`). Keep `buildSchedule` only for the auto-from-inventory merge.
 
-## Per-tab demo content
+## 2. Suggested upgrades to make it genuinely useful
 
-Pull from a new `src/lib/demo-data.ts` (sample Kedar household: LG AC, Samsung TV, MacBook, Bosch washing machine, Honda City, etc.).
+Pick any subset; flagged ones are highest leverage.
 
-1. **Dashboard** — show the original rich view: ₹8.42L asset value, "3 need attention", ₹12K savings, AI suggestion card, 3 alert banners (AC warranty expiring, RO filter due, car insurance renewal), Service Marketplace card for an "expired" LG warranty, full Maintenance Calendar with seasonal + sample items.
-2. **Inventory** — 5–6 sample items with the 5-dot lifecycle bar (Invoice/Warranty/AMC/Insurance/Manual), purchase price + current market value with depreciation %.
-3. **Locker** — 8 category tiles (Invoices, Warranties, Insurance, Manuals, Property, IDs, Vehicle, Medical) each with a sample count badge; "Home Timeline" below with past/upcoming events.
-4. **AI Assistant** — pre-seeded suggestion chips that work against demo data ("When does my AC warranty end?", "Kitchen total value?", "All Samsung items"). Responses run through the same AI server fn but with demo inventory as context.
-5. **Insurance** — coverage gap visualiser (₹8.99L home value, ₹4L covered, ₹4.99L gap), 4 insurer partner cards, 3-tier plan comparison (Free / Pro ₹999 / Business ₹3,999).
+1. **★ Push / browser reminders 7 days + 1 day before each task** — using the existing reminders util; opt-in toggle on the calendar header.
+2. **★ "Mark done" history** — every completion writes a row to `maintenance_log` so the user sees "Last AC service: 14 Mar 2026 by Urban Company". Becomes proof for warranty/insurance claims.
+3. **★ One-tap "Book now"** — any task tile shows the Service Marketplace partners (Urban Company / OEM / Local) inline, pre-filled with the item brand.
+4. **Cost tracking** — optional ₹ amount on completion; year-end view shows "You spent ₹14,200 on home upkeep in 2026" + per-category breakdown.
+5. **Smart recurrence** — when a task is marked done, auto-schedule the next occurrence (e.g. RO filter every 3 months from completion date, not calendar month).
+6. **Seasonal templates by city** — pick "Bengaluru / Delhi / Mumbai / Chennai" and we pre-load locally relevant tasks (pre-monsoon roof check, winter geyser service, summer AC gas top-up).
+7. **Share with family / household** — second user (spouse, parent) can view and tick off tasks; useful for joint households.
+8. **Export to Google Calendar** — one-tap ICS download or Google Calendar deep-link per task so reminders live where the user already looks.
+9. **AI Assistant integration** — the assistant can answer "what's due next month?" and "create a quarterly RO filter reminder" by reading/writing this table.
+10. **Vendor notes** — store the technician's name/number per task; next year the user taps "call same guy".
 
-## Visual treatment
+## Technical details
 
-Demo content rendered with a subtle "SAMPLE" chip on each card (top-right, muted brand tint) so users never confuse it with real data. Same design tokens as live UI — no separate styling.
+- New table requires its own migration step (cannot be combined with code edits in the same turn). After the migration is approved, the regenerated types unlock typed CRUD in `maintenance-api.ts`.
+- Seed-defaults strategy: on the dashboard mount, if `count(maintenance_tasks where user_id = me) = 0` and a `localStorage("ghar.maint.seeded")` flag is absent, insert the 12 `DEFAULT_SCHEDULE` rows with `recurrence='yearly'`, then set the flag. Keeps it idempotent without a server-side migration trigger.
+- Sheet UI reuses existing bottom-sheet pattern from `AddItemForm`.
+- TanStack Query keys: `["maintenance", userId]`; invalidate on every mutation.
 
-## Files
+## Out of scope (this plan)
+- Native push notifications (requires Capacitor wiring).
+- Multi-user household sharing (needs a `households` table — separate plan).
+- Payment for booking partners.
 
-- **New** `src/lib/demo-data.ts` — typed sample items, locker counts, timeline events, insurance figures.
-- **New** `src/components/demo/DemoBanner.tsx` — sticky CTA banner.
-- **New** `src/components/demo/SampleChip.tsx` — small "SAMPLE" badge.
-- **Edit** `src/routes/index.tsx` — for each of the 5 tab components, branch on `itemsQ.data.length === 0`: render demo variant + banner, else render real data view (current behaviour unchanged).
-- **Remove** the current "empty dashboard" placeholder added last turn (superseded by full demo view).
-
-## Out of scope
-
-- No DB writes for demo data (purely in-memory).
-- No "reset to demo" toggle after items exist.
-- Onboarding carousel logic untouched.
+## Question for you
+Should I ship just **the editable calendar (#1)** now, or bundle one or two of the upgrades — my recommendation is **#1 + #2 (mark-done history) + #3 (inline Book now)** since they reuse code already in the app and turn the calendar into a real log without new dependencies.

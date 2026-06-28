@@ -6,6 +6,17 @@ import { DefaultChatTransport } from "ai";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { createItem, deleteItem, listItems, updateItem, type DbItem, type NewItem } from "@/lib/items-api";
+import {
+  listMaintTasks,
+  createMaintTask,
+  updateMaintTask,
+  deleteMaintTask,
+  seedDefaultTasks,
+  isDoneThisCycle,
+  type MaintTask,
+  type MaintTone,
+  type Recurrence,
+} from "@/lib/maintenance-api";
 import { buildReminders } from "@/lib/reminders";
 import {
   HomeIcon,
@@ -330,15 +341,14 @@ function Dashboard({ setTab }: { setTab: (t: TabKey) => void }) {
 }
 
 /* --------------------- MAINTENANCE CALENDAR --------------------- */
-type MaintTone = "blue" | "teal" | "purple" | "amber" | "red" | "green";
-type MaintTask = { label: string; tone: MaintTone };
+type DefaultTask = { label: string; tone: MaintTone };
 
 const MONTHS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
-const DEFAULT_SCHEDULE: Record<number, MaintTask[]> = {
+const DEFAULT_SCHEDULE: Record<number, DefaultTask[]> = {
   0: [{ label: "AC Service", tone: "blue" }],
   1: [{ label: "RO Filter", tone: "teal" }],
   2: [{ label: "Car Insurance", tone: "purple" }],
@@ -359,53 +369,78 @@ const TONE_STYLES: Record<MaintTone, string> = {
   purple: "bg-[oklch(0.94_0.05_290)] text-[oklch(0.4_0.13_290)]",
   amber: "bg-[oklch(0.95_0.06_85)] text-[oklch(0.42_0.1_70)]",
   red: "bg-[oklch(0.95_0.04_25)] text-[oklch(0.45_0.15_25)]",
-  green: "bg-[oklch(0.94_0.07_158)] text-[oklch(0.38_0.13_158)]",
+  green: "bg-[oklch(0.94_0.07_158)] text-[oklch(0.38_0.15_158)]",
 };
 
-function buildSchedule(items: DbItem[]): Record<number, MaintTask[]> {
-  const sched: Record<number, MaintTask[]> = {};
-  for (let i = 0; i < 12; i++) sched[i] = [...(DEFAULT_SCHEDULE[i] ?? [])];
-
-  const push = (m: number, task: MaintTask) => {
-    if (!sched[m].some((t) => t.label === task.label)) sched[m].push(task);
-  };
-
-  for (const it of items) {
-    const dates: { d: string | null; tone: MaintTone; label: string }[] = [
-      { d: it.warranty_until, tone: "red", label: `${it.name} warranty` },
-      { d: it.amc_until, tone: "amber", label: `${it.name} AMC` },
-      { d: it.insured_until, tone: "purple", label: `${it.name} insurance` },
-    ];
-    for (const { d, tone, label } of dates) {
-      if (!d) continue;
-      const m = new Date(d + "T00:00:00").getMonth();
-      if (!Number.isNaN(m)) push(m, { label, tone });
-    }
-  }
-  return sched;
-}
 
 function MaintenanceCalendar({ items }: { items: DbItem[] }) {
-  const schedule = useMemo(() => buildSchedule(items), [items]);
+  const { user } = useAuth();
+  const userId = user?.id;
+  const qc = useQueryClient();
+  const tasksQ = useQuery({
+    queryKey: ["maintenance"],
+    queryFn: listMaintTasks,
+    enabled: !!userId,
+  });
+  const [openMonth, setOpenMonth] = useState<number | null>(null);
+  const seededRef = useRef(false);
+
+  // One-time seed of default schedule for new users.
+  useEffect(() => {
+    if (!userId || tasksQ.isLoading || seededRef.current) return;
+    if ((tasksQ.data ?? []).length > 0) return;
+    if (typeof window !== "undefined" && localStorage.getItem("ghar.maint.seeded")) return;
+    seededRef.current = true;
+    const defaults = Object.entries(DEFAULT_SCHEDULE).flatMap(([m, list]) =>
+      list.map((t) => ({ month: Number(m), label: t.label, tone: t.tone })),
+    );
+    seedDefaultTasks(userId, defaults)
+      .then(() => {
+        if (typeof window !== "undefined") localStorage.setItem("ghar.maint.seeded", "1");
+        qc.invalidateQueries({ queryKey: ["maintenance"] });
+      })
+      .catch(() => {
+        seededRef.current = false;
+      });
+  }, [userId, tasksQ.data, tasksQ.isLoading, qc]);
+
+  const autoTasks = useMemo(() => buildAutoTasks(items), [items]);
+  const tasksByMonth = useMemo(() => {
+    const map: Record<number, DisplayTask[]> = {};
+    for (let i = 0; i < 12; i++) map[i] = [];
+    for (const t of tasksQ.data ?? []) {
+      const m = t.due_date ? new Date(t.due_date + "T00:00:00").getMonth() : t.month;
+      if (!Number.isNaN(m)) map[m].push({ kind: "db", task: t });
+    }
+    for (const a of autoTasks) {
+      // Avoid duplicates if a DB task already covers the same linked item label.
+      const dup = (tasksQ.data ?? []).some(
+        (t) => t.linked_item_id === a.linked_item_id && t.label === a.label,
+      );
+      if (!dup) map[a.month].push({ kind: "auto", task: a });
+    }
+    return map;
+  }, [tasksQ.data, autoTasks]);
+
   const currentMonth = new Date().getMonth();
 
   return (
     <>
       <SectionTitle>Maintenance calendar</SectionTitle>
       <p className="-mt-1 mb-2 text-[11px] text-text-muted">
-        Your home's yearly upkeep — auto-built from inventory + recommended seasonal tasks.
+        Tap any month to add, edit or mark tasks done. Auto-built from inventory + seasonal defaults.
       </p>
       <div className="grid grid-cols-2 gap-2">
         {MONTHS.map((m, idx) => {
-          const tasks = schedule[idx];
+          const tasks = tasksByMonth[idx];
           const isNow = idx === currentMonth;
           return (
-            <div
+            <button
+              type="button"
               key={m}
-              className={`rounded-xl border p-2.5 ${
-                isNow
-                  ? "border-brand bg-brand/5"
-                  : "border-border bg-surface-2"
+              onClick={() => setOpenMonth(idx)}
+              className={`rounded-xl border p-2.5 text-left transition active:scale-[0.98] ${
+                isNow ? "border-brand bg-brand/5" : "border-border bg-surface-2"
               }`}
             >
               <div className="mb-1.5 flex items-center justify-between">
@@ -423,30 +458,355 @@ function MaintenanceCalendar({ items }: { items: DbItem[] }) {
                 )}
               </div>
               {tasks.length === 0 ? (
-                <p className="text-[10px] text-text-muted">No tasks</p>
+                <p className="text-[10px] text-text-muted">+ Add task</p>
               ) : (
                 <div className="space-y-1">
-                  {tasks.slice(0, 3).map((t, i) => (
-                    <div
-                      key={i}
-                      className={`truncate rounded-md px-1.5 py-0.5 text-[10px] font-medium ${TONE_STYLES[t.tone]}`}
-                      title={t.label}
-                    >
-                      {t.label}
-                    </div>
-                  ))}
+                  {tasks.slice(0, 3).map((t, i) => {
+                    const done = t.kind === "db" && isDoneThisCycle(t.task);
+                    return (
+                      <div
+                        key={i}
+                        className={`flex items-center gap-1 truncate rounded-md px-1.5 py-0.5 text-[10px] font-medium ${TONE_STYLES[t.kind === "db" ? t.task.tone : t.task.tone]} ${done ? "opacity-50 line-through" : ""}`}
+                        title={t.kind === "db" ? t.task.label : t.task.label}
+                      >
+                        {done && <Check className="h-2.5 w-2.5 flex-shrink-0" />}
+                        <span className="truncate">{t.kind === "db" ? t.task.label : t.task.label}</span>
+                      </div>
+                    );
+                  })}
                   {tasks.length > 3 && (
                     <div className="text-[9px] text-text-muted">+{tasks.length - 3} more</div>
                   )}
                 </div>
               )}
-            </div>
+            </button>
           );
         })}
       </div>
+      {openMonth !== null && userId && (
+        <MonthTasksSheet
+          month={openMonth}
+          tasks={tasksByMonth[openMonth]}
+          items={items}
+          userId={userId}
+          onClose={() => setOpenMonth(null)}
+        />
+      )}
     </>
   );
 }
+
+type DisplayTask =
+  | { kind: "db"; task: MaintTask }
+  | { kind: "auto"; task: { month: number; label: string; tone: MaintTone; linked_item_id: string | null; brand: string | null; itemName: string } };
+
+function buildAutoTasks(items: DbItem[]) {
+  const out: { month: number; label: string; tone: MaintTone; linked_item_id: string; brand: string | null; itemName: string }[] = [];
+  for (const it of items) {
+    const dates: { d: string | null; tone: MaintTone; suffix: string }[] = [
+      { d: it.warranty_until, tone: "red", suffix: "warranty" },
+      { d: it.amc_until, tone: "amber", suffix: "AMC" },
+      { d: it.insured_until, tone: "purple", suffix: "insurance" },
+    ];
+    for (const { d, tone, suffix } of dates) {
+      if (!d) continue;
+      const m = new Date(d + "T00:00:00").getMonth();
+      if (Number.isNaN(m)) continue;
+      out.push({
+        month: m,
+        label: `${it.name} ${suffix}`,
+        tone,
+        linked_item_id: it.id,
+        brand: it.brand,
+        itemName: it.name,
+      });
+    }
+  }
+  return out;
+}
+
+function MonthTasksSheet({
+  month,
+  tasks,
+  items,
+  userId,
+  onClose,
+}: {
+  month: number;
+  tasks: DisplayTask[];
+  items: DbItem[];
+  userId: string;
+  onClose: () => void;
+}) {
+  const qc = useQueryClient();
+  const [editing, setEditing] = useState<MaintTask | null>(null);
+  const [adding, setAdding] = useState(false);
+
+  const toggleDone = useMutation({
+    mutationFn: (t: MaintTask) =>
+      updateMaintTask(t.id, { done_at: isDoneThisCycle(t) ? null : new Date().toISOString() }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["maintenance"] }),
+  });
+  const del = useMutation({
+    mutationFn: (id: string) => deleteMaintTask(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["maintenance"] }),
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={onClose}>
+      <div
+        className="w-full max-w-[480px] rounded-t-2xl bg-surface-0 p-4 max-h-[85vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-3 flex items-center justify-between">
+          <h3 className="text-[15px] font-semibold">{MONTHS[month]} — maintenance</h3>
+          <button onClick={onClose} aria-label="Close" className="rounded-full p-1 hover:bg-surface-2">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {tasks.length === 0 && (
+          <p className="mb-3 text-[12px] text-text-muted">No tasks yet. Add your first one below.</p>
+        )}
+
+        <div className="space-y-2">
+          {tasks.map((t, i) => {
+            if (t.kind === "auto") {
+              return (
+                <div
+                  key={`auto-${i}`}
+                  className="flex items-start justify-between gap-2 rounded-lg border border-border bg-surface-2 p-2.5"
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-medium ${TONE_STYLES[t.task.tone]}`}>
+                        {t.task.label}
+                      </span>
+                      <span className="rounded-full bg-surface-3 px-1.5 py-0.5 text-[9px] uppercase tracking-wider text-text-muted">
+                        Auto
+                      </span>
+                    </div>
+                    <p className="mt-1 text-[10px] text-text-muted">From your inventory</p>
+                  </div>
+                </div>
+              );
+            }
+            const done = isDoneThisCycle(t.task);
+            const linked = items.find((i) => i.id === t.task.linked_item_id) ?? null;
+            const partner = linked
+              ? `https://www.google.com/search?q=${encodeURIComponent(`${linked.brand ?? ""} ${linked.name} service near me`)}`
+              : `https://www.google.com/search?q=${encodeURIComponent(`${t.task.label} service near me`)}`;
+            return (
+              <div
+                key={t.task.id}
+                className="rounded-lg border border-border bg-surface-2 p-2.5"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className={`text-[13px] font-medium ${done ? "line-through opacity-60" : ""}`}>
+                      {t.task.label}
+                    </div>
+                    <div className="mt-0.5 flex items-center gap-1.5 text-[10px] text-text-muted">
+                      <span className="capitalize">{t.task.recurrence}</span>
+                      {t.task.due_date && <span>· due {t.task.due_date}</span>}
+                      {t.task.done_at && (
+                        <span>· last done {new Date(t.task.done_at).toLocaleDateString()}</span>
+                      )}
+                    </div>
+                    {t.task.notes && (
+                      <p className="mt-1 text-[11px] text-text-secondary">{t.task.notes}</p>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <button
+                      type="button"
+                      onClick={() => toggleDone.mutate(t.task)}
+                      aria-label={done ? "Mark not done" : "Mark done"}
+                      className={`flex h-7 w-7 items-center justify-center rounded-full ${done ? "bg-[oklch(0.94_0.07_158)] text-[oklch(0.38_0.13_158)]" : "bg-surface-3 text-text-secondary"}`}
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setEditing(t.task)}
+                      aria-label="Edit"
+                      className="flex h-7 w-7 items-center justify-center rounded-full bg-surface-3 text-text-secondary"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => del.mutate(t.task.id)}
+                      aria-label="Delete"
+                      className="flex h-7 w-7 items-center justify-center rounded-full bg-surface-3 text-[oklch(0.55_0.18_25)]"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-2">
+                  <a
+                    href={partner}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1 rounded-full bg-brand px-2.5 py-1 text-[10px] font-medium text-brand-foreground"
+                  >
+                    <Wrench className="h-3 w-3" /> Book service
+                  </a>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {!adding && !editing && (
+          <button
+            type="button"
+            onClick={() => setAdding(true)}
+            className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-border bg-surface-2 py-2 text-[12px] font-medium text-text-secondary"
+          >
+            <Plus className="h-3.5 w-3.5" /> Add task to {MONTHS[month]}
+          </button>
+        )}
+
+        {(adding || editing) && (
+          <TaskForm
+            month={month}
+            userId={userId}
+            editing={editing}
+            onDone={() => {
+              setAdding(false);
+              setEditing(null);
+            }}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+const TONE_CHOICES: { value: MaintTone; label: string }[] = [
+  { value: "blue", label: "Blue" },
+  { value: "teal", label: "Teal" },
+  { value: "purple", label: "Purple" },
+  { value: "amber", label: "Amber" },
+  { value: "red", label: "Red" },
+  { value: "green", label: "Green" },
+];
+
+function TaskForm({
+  month,
+  userId,
+  editing,
+  onDone,
+}: {
+  month: number;
+  userId: string;
+  editing: MaintTask | null;
+  onDone: () => void;
+}) {
+  const qc = useQueryClient();
+  const [label, setLabel] = useState(editing?.label ?? "");
+  const [tone, setTone] = useState<MaintTone>(editing?.tone ?? "blue");
+  const [recurrence, setRecurrence] = useState<Recurrence>(editing?.recurrence ?? "yearly");
+  const [dueDate, setDueDate] = useState(editing?.due_date ?? "");
+  const [notes, setNotes] = useState(editing?.notes ?? "");
+  const [err, setErr] = useState<string | null>(null);
+
+  const mut = useMutation({
+    mutationFn: () => {
+      const payload = {
+        month,
+        label: label.trim(),
+        tone,
+        recurrence,
+        due_date: dueDate || null,
+        notes: notes.trim() || null,
+      };
+      return editing ? updateMaintTask(editing.id, payload) : createMaintTask(payload, userId);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["maintenance"] });
+      onDone();
+    },
+    onError: (e: unknown) => setErr(e instanceof Error ? e.message : "Could not save"),
+  });
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!label.trim()) {
+          setErr("Label is required");
+          return;
+        }
+        setErr(null);
+        mut.mutate();
+      }}
+      className="mt-3 space-y-2 rounded-lg border border-border bg-surface-1 p-3"
+    >
+      <div className="text-[12px] font-medium">{editing ? "Edit task" : "New task"}</div>
+      <input
+        value={label}
+        onChange={(e) => setLabel(e.target.value)}
+        placeholder="e.g. AC service, RO filter change"
+        className="w-full rounded-md border border-border bg-surface-0 px-2.5 py-1.5 text-[13px]"
+      />
+      <div className="grid grid-cols-2 gap-2">
+        <select
+          value={tone}
+          onChange={(e) => setTone(e.target.value as MaintTone)}
+          className="rounded-md border border-border bg-surface-0 px-2 py-1.5 text-[12px]"
+        >
+          {TONE_CHOICES.map((t) => (
+            <option key={t.value} value={t.value}>{t.label}</option>
+          ))}
+        </select>
+        <select
+          value={recurrence}
+          onChange={(e) => setRecurrence(e.target.value as Recurrence)}
+          className="rounded-md border border-border bg-surface-0 px-2 py-1.5 text-[12px]"
+        >
+          <option value="none">One-off</option>
+          <option value="monthly">Monthly</option>
+          <option value="quarterly">Quarterly</option>
+          <option value="yearly">Yearly</option>
+        </select>
+      </div>
+      <input
+        type="date"
+        value={dueDate}
+        onChange={(e) => setDueDate(e.target.value)}
+        className="w-full rounded-md border border-border bg-surface-0 px-2.5 py-1.5 text-[12px]"
+      />
+      <textarea
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        placeholder="Notes (vendor, last cost, phone)"
+        rows={2}
+        className="w-full rounded-md border border-border bg-surface-0 px-2.5 py-1.5 text-[12px]"
+      />
+      {err && <p className="text-[11px] text-[oklch(0.55_0.18_25)]">{err}</p>}
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={mut.isPending}
+          className="flex-1 rounded-md bg-brand py-1.5 text-[12px] font-medium text-brand-foreground disabled:opacity-50"
+        >
+          {mut.isPending ? "Saving…" : editing ? "Save changes" : "Add task"}
+        </button>
+        <button
+          type="button"
+          onClick={onDone}
+          className="rounded-md border border-border px-3 py-1.5 text-[12px]"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
+
 
 
 /* --------------------- SERVICE MARKETPLACE --------------------- */

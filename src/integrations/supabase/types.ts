@@ -80,6 +80,59 @@ export type Database = {
         }
         Relationships: []
       }
+      maintenance_tasks: {
+        Row: {
+          created_at: string
+          done_at: string | null
+          due_date: string | null
+          id: string
+          label: string
+          linked_item_id: string | null
+          month: number
+          notes: string | null
+          recurrence: string
+          tone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          done_at?: string | null
+          due_date?: string | null
+          id?: string
+          label: string
+          linked_item_id?: string | null
+          month: number
+          notes?: string | null
+          recurrence?: string
+          tone?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          done_at?: string | null
+          due_date?: string | null
+          id?: string
+          label?: string
+          linked_item_id?: string | null
+          month?: number
+          notes?: string | null
+          recurrence?: string
+          tone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_tasks_linked_item_id_fkey"
+            columns: ["linked_item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
