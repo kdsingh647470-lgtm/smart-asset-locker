@@ -6,6 +6,17 @@ import { DefaultChatTransport } from "ai";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { createItem, deleteItem, listItems, updateItem, type DbItem, type NewItem } from "@/lib/items-api";
+import {
+  listMaintTasks,
+  createMaintTask,
+  updateMaintTask,
+  deleteMaintTask,
+  seedDefaultTasks,
+  isDoneThisCycle,
+  type MaintTask,
+  type MaintTone,
+  type Recurrence,
+} from "@/lib/maintenance-api";
 import { buildReminders } from "@/lib/reminders";
 import {
   HomeIcon,
