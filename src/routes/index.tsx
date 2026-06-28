@@ -1589,8 +1589,9 @@ function Scan() {
       ...(d.insured_until ? { insured_until: d.insured_until } : {}),
       ...(d.amc_until ? { amc_until: d.amc_until } : {}),
     };
-    if (docType === "invoice") patch.has_invoice = true;
-    if (docType === "manual") patch.has_manual = true;
+    const saveDocType = result.docType;
+    if (saveDocType === "invoice") patch.has_invoice = true;
+    if (saveDocType === "manual") patch.has_manual = true;
 
     try {
       if (attachTo === "new") {
