@@ -1612,7 +1612,7 @@ function Scan() {
       await uploadDocument({
         userId: user.id,
         itemId,
-        docType,
+        docType: saveDocType,
         file,
         extracted: d,
       });
