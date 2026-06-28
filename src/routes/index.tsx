@@ -1208,14 +1208,18 @@ function AddItemForm({
   const [purchasedAt, setPurchasedAt] = useState(editing?.purchased_at ?? "");
   const [warrantyUntil, setWarrantyUntil] = useState(editing?.warranty_until ?? "");
   const [err, setErr] = useState<string | null>(null);
+  const qc = useQueryClient();
+
 
   const mut = useMutation({
     mutationFn: () => {
+      const paid = Number(price) || 0;
       const payload = {
         name,
         brand: brand || undefined,
         room,
-        price_paid: Number(price) || 0,
+        price_paid: paid,
+        price_now: paid,
         purchased_at: purchasedAt || null,
         warranty_until: warrantyUntil || null,
       };
@@ -1224,6 +1228,7 @@ function AddItemForm({
         : createItem(payload, userId);
     },
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["items"] });
       if (!editing) {
         setName("");
         setBrand("");
