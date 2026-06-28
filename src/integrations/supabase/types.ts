@@ -94,6 +94,8 @@ export type Database = {
           tone: string
           updated_at: string
           user_id: string
+          vendor_name: string | null
+          vendor_phone: string | null
         }
         Insert: {
           created_at?: string
@@ -108,6 +110,8 @@ export type Database = {
           tone?: string
           updated_at?: string
           user_id: string
+          vendor_name?: string | null
+          vendor_phone?: string | null
         }
         Update: {
           created_at?: string
@@ -122,6 +126,8 @@ export type Database = {
           tone?: string
           updated_at?: string
           user_id?: string
+          vendor_name?: string | null
+          vendor_phone?: string | null
         }
         Relationships: [
           {
