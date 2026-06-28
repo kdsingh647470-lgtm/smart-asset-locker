@@ -1755,7 +1755,7 @@ function Scan() {
               </div>
 
               <div className="grid grid-cols-2 gap-2 text-[11px]">
-                {docType === "invoice" && (
+                {result.docType === "invoice" && (
                   <>
                     <KV k="Paid" v={d.price_paid ? inr(d.price_paid) : "—"} />
                     <KV k="Now" v={d.price_now ? inr(d.price_now) : "—"} />
@@ -1765,7 +1765,7 @@ function Scan() {
                     <KV k="Seller" v={d.seller ?? "—"} />
                   </>
                 )}
-                {docType === "warranty" && (
+                {result.docType === "warranty" && (
                   <>
                     <KV k="Provider" v={d.provider ?? "—"} />
                     <KV k="Ends" v={d.warranty_until ?? "—"} />
@@ -1774,7 +1774,7 @@ function Scan() {
                     <KV k="Coverage" v={d.coverage ?? "—"} />
                   </>
                 )}
-                {docType === "insurance" && (
+                {result.docType === "insurance" && (
                   <>
                     <KV k="Insurer" v={d.insurer ?? "—"} />
                     <KV k="Policy #" v={d.policy_number ?? "—"} />
@@ -1784,14 +1784,14 @@ function Scan() {
                     <KV k="Coverage" v={d.coverage ?? "—"} />
                   </>
                 )}
-                {docType === "manual" && (
+                {result.docType === "manual" && (
                   <>
                     <KV k="Category" v={d.category ?? "—"} />
                     <KV k="Model" v={d.serial ?? "—"} />
                     <KV k="Specs" v={d.key_specs ?? "—"} />
                   </>
                 )}
-                {docType === "amc" && (
+                {result.docType === "amc" && (
                   <>
                     <KV k="Provider" v={d.provider ?? "—"} />
                     <KV k="Contract #" v={d.contract_number ?? "—"} />
