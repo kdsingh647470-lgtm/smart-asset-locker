@@ -161,8 +161,22 @@ export const Route = createFileRoute("/api/scan-invoice")({
           return json({ docType, data: output });
         } catch (err) {
           const message = err instanceof Error ? err.message : "Scan failed";
-          return json({ error: message }, 500);
+          console.error("scan-invoice failed:", message);
+          // Schema-mismatch / empty doc / model refusal: return 200 so the UI
+          // can show a friendly message instead of crashing the route.
+          const isSchemaMiss =
+            /did not match schema|No object generated|schema/i.test(message);
+          if (isSchemaMiss) {
+            return json({
+              error:
+                "Couldn't read this document. Try a clearer photo, a different page, or fill the details manually.",
+              fallback: true,
+              docType,
+            });
+          }
+          return json({ error: message, fallback: true }, 200);
         }
+
       },
     },
   },
