@@ -113,7 +113,7 @@ function GharLogApp() {
   return (
     <div className="min-h-screen bg-surface-0 text-text-primary">
       <div className="mx-auto flex min-h-screen max-w-[480px] flex-col bg-surface-0 shadow-sm md:my-4 md:min-h-[calc(100vh-2rem)] md:rounded-2xl md:overflow-hidden">
-        <Header />
+        <Header onHome={() => setTab("dash")} />
         <TabBar tab={tab} setTab={setTab} />
         <main className="flex-1 px-4 pb-24 pt-4">
           {tab === "dash" && <Dashboard setTab={setTab} />}
@@ -129,18 +129,23 @@ function GharLogApp() {
   );
 }
 
-function Header() {
+function Header({ onHome }: { onHome: () => void }) {
   return (
     <header className="flex items-center justify-between bg-brand px-4 py-3 text-brand-foreground">
-      <div className="flex items-center gap-2.5">
+      <button
+        type="button"
+        onClick={onHome}
+        aria-label="Go to home"
+        className="flex items-center gap-2.5 rounded-lg -mx-1 px-1 py-0.5 transition hover:bg-white/5 active:bg-white/10"
+      >
         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent-blue">
           <HomeIcon className="h-5 w-5" strokeWidth={2.2} />
         </div>
-        <div className="leading-tight">
+        <div className="text-left leading-tight">
           <div className="text-[17px] font-medium tracking-tight">GharLog</div>
           <div className="text-[10px] text-white/55">India's Digital Home Asset Manager</div>
         </div>
-      </div>
+      </button>
       <div className="flex items-center gap-2">
         <span className="flex items-center gap-1 rounded-full bg-[oklch(0.62_0.13_290)] px-2.5 py-0.5 text-[11px] font-medium text-white">
           <Crown className="h-3 w-3" />
