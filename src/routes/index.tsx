@@ -644,7 +644,15 @@ function MonthTasksSheet({
                     </button>
                   </div>
                 </div>
-                <div className="mt-2">
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  {t.task.vendor_name || t.task.vendor_phone ? (
+                    <a
+                      href={t.task.vendor_phone ? `tel:${t.task.vendor_phone.replace(/\s+/g, "")}` : undefined}
+                      className="inline-flex items-center gap-1 rounded-full bg-[oklch(0.94_0.07_158)] px-2.5 py-1 text-[10px] font-medium text-[oklch(0.32_0.13_158)]"
+                    >
+                      📞 {t.task.vendor_name || t.task.vendor_phone}
+                    </a>
+                  ) : null}
                   <a
                     href={partner}
                     target="_blank"
@@ -654,6 +662,7 @@ function MonthTasksSheet({
                     <Wrench className="h-3 w-3" /> Book service
                   </a>
                 </div>
+
               </div>
             );
           })}
