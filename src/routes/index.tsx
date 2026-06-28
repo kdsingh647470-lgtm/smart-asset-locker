@@ -773,12 +773,16 @@ function TaskForm({
           <option value="yearly">Yearly</option>
         </select>
       </div>
-      <input
-        type="date"
-        value={dueDate}
-        onChange={(e) => setDueDate(e.target.value)}
-        className="w-full rounded-md border border-border bg-surface-0 px-2.5 py-1.5 text-[12px]"
-      />
+      <label className="flex flex-col gap-1 text-[11px] text-muted-foreground">
+        Due date (optional) <span className="text-[10px] opacity-70">— exact day this task is due. Leave blank to just keep it in the chosen month.</span>
+        <input
+          type="date"
+          value={dueDate}
+          onChange={(e) => setDueDate(e.target.value)}
+          className="w-full rounded-md border border-border bg-surface-0 px-2.5 py-1.5 text-[12px] text-foreground"
+        />
+      </label>
+
       <textarea
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
