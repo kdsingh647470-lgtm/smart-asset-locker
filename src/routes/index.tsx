@@ -1557,7 +1557,9 @@ function Scan() {
       });
       const json = await resp.json();
       if (!resp.ok) throw new Error(json.error ?? "Scan failed");
+      if (json.error) throw new Error(json.error);
       setResult(json as ScanResponse);
+
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Scan failed");
     } finally {
