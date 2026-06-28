@@ -14,6 +14,8 @@ export type MaintTask = {
   linked_item_id: string | null;
   done_at: string | null;
   notes: string | null;
+  vendor_name: string | null;
+  vendor_phone: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -26,7 +28,10 @@ export type NewMaintTask = {
   due_date?: string | null;
   notes?: string | null;
   linked_item_id?: string | null;
+  vendor_name?: string | null;
+  vendor_phone?: string | null;
 };
+
 
 export async function listMaintTasks(): Promise<MaintTask[]> {
   const { data, error } = await supabase
