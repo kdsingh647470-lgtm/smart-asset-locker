@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export type DocType = "invoice" | "warranty" | "insurance" | "manual" | "amc";
+export type DocType = "any" | "invoice" | "warranty" | "insurance" | "manual" | "amc";
 
 export type ItemDocument = {
   id: string;
