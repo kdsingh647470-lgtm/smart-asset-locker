@@ -711,6 +711,8 @@ function TaskForm({
   const [recurrence, setRecurrence] = useState<Recurrence>(editing?.recurrence ?? "yearly");
   const [dueDate, setDueDate] = useState(editing?.due_date ?? "");
   const [notes, setNotes] = useState(editing?.notes ?? "");
+  const [vendorName, setVendorName] = useState(editing?.vendor_name ?? "");
+  const [vendorPhone, setVendorPhone] = useState(editing?.vendor_phone ?? "");
   const [err, setErr] = useState<string | null>(null);
 
   const mut = useMutation({
@@ -725,7 +727,10 @@ function TaskForm({
         recurrence,
         due_date: dueDate || null,
         notes: notes.trim() || null,
+        vendor_name: vendorName.trim() || null,
+        vendor_phone: vendorPhone.trim() || null,
       };
+
       return editing ? updateMaintTask(editing.id, payload) : createMaintTask(payload, userId);
     },
 
