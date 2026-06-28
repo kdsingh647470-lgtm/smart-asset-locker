@@ -1495,7 +1495,9 @@ function capitalize(s: string) {
 }
 
 /* ------------------------- SCAN ------------------------- */
-const DOC_TYPES: { key: DocType; label: string; hint: string }[] = [
+type ScanDocType = DocType | "any";
+const DOC_TYPES: { key: ScanDocType; label: string; hint: string }[] = [
+  { key: "any", label: "Any", hint: "Auto-detect" },
   { key: "invoice", label: "Invoice", hint: "Bill / receipt" },
   { key: "warranty", label: "Warranty", hint: "Card / certificate" },
   { key: "insurance", label: "Insurance", hint: "Policy doc" },
