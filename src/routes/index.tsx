@@ -715,8 +715,11 @@ function TaskForm({
 
   const mut = useMutation({
     mutationFn: () => {
+      const derivedMonth = dueDate
+        ? new Date(dueDate + "T00:00:00").getMonth()
+        : month;
       const payload = {
-        month,
+        month: derivedMonth,
         label: label.trim(),
         tone,
         recurrence,
@@ -725,6 +728,7 @@ function TaskForm({
       };
       return editing ? updateMaintTask(editing.id, payload) : createMaintTask(payload, userId);
     },
+
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["maintenance"] });
       onDone();
