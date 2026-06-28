@@ -330,15 +330,14 @@ function Dashboard({ setTab }: { setTab: (t: TabKey) => void }) {
 }
 
 /* --------------------- MAINTENANCE CALENDAR --------------------- */
-type MaintTone = "blue" | "teal" | "purple" | "amber" | "red" | "green";
-type MaintTask = { label: string; tone: MaintTone };
+type DefaultTask = { label: string; tone: MaintTone };
 
 const MONTHS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
-const DEFAULT_SCHEDULE: Record<number, MaintTask[]> = {
+const DEFAULT_SCHEDULE: Record<number, DefaultTask[]> = {
   0: [{ label: "AC Service", tone: "blue" }],
   1: [{ label: "RO Filter", tone: "teal" }],
   2: [{ label: "Car Insurance", tone: "purple" }],
@@ -359,31 +358,9 @@ const TONE_STYLES: Record<MaintTone, string> = {
   purple: "bg-[oklch(0.94_0.05_290)] text-[oklch(0.4_0.13_290)]",
   amber: "bg-[oklch(0.95_0.06_85)] text-[oklch(0.42_0.1_70)]",
   red: "bg-[oklch(0.95_0.04_25)] text-[oklch(0.45_0.15_25)]",
-  green: "bg-[oklch(0.94_0.07_158)] text-[oklch(0.38_0.13_158)]",
+  green: "bg-[oklch(0.94_0.07_158)] text-[oklch(0.38_0.15_158)]",
 };
 
-function buildSchedule(items: DbItem[]): Record<number, MaintTask[]> {
-  const sched: Record<number, MaintTask[]> = {};
-  for (let i = 0; i < 12; i++) sched[i] = [...(DEFAULT_SCHEDULE[i] ?? [])];
-
-  const push = (m: number, task: MaintTask) => {
-    if (!sched[m].some((t) => t.label === task.label)) sched[m].push(task);
-  };
-
-  for (const it of items) {
-    const dates: { d: string | null; tone: MaintTone; label: string }[] = [
-      { d: it.warranty_until, tone: "red", label: `${it.name} warranty` },
-      { d: it.amc_until, tone: "amber", label: `${it.name} AMC` },
-      { d: it.insured_until, tone: "purple", label: `${it.name} insurance` },
-    ];
-    for (const { d, tone, label } of dates) {
-      if (!d) continue;
-      const m = new Date(d + "T00:00:00").getMonth();
-      if (!Number.isNaN(m)) push(m, { label, tone });
-    }
-  }
-  return sched;
-}
 
 function MaintenanceCalendar({ items }: { items: DbItem[] }) {
   const { user } = useAuth();
