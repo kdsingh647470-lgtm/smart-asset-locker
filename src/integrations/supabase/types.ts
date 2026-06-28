@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      item_documents: {
+        Row: {
+          created_at: string
+          doc_type: Database["public"]["Enums"]["doc_type"]
+          extracted_json: Json | null
+          file_name: string
+          file_path: string
+          id: string
+          item_id: string | null
+          mime_type: string
+          size_bytes: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          doc_type: Database["public"]["Enums"]["doc_type"]
+          extracted_json?: Json | null
+          file_name: string
+          file_path: string
+          id?: string
+          item_id?: string | null
+          mime_type: string
+          size_bytes?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          doc_type?: Database["public"]["Enums"]["doc_type"]
+          extracted_json?: Json | null
+          file_name?: string
+          file_path?: string
+          id?: string
+          item_id?: string | null
+          mime_type?: string
+          size_bytes?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_documents_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       items: {
         Row: {
           amc_until: string | null
@@ -147,7 +197,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      doc_type: "invoice" | "warranty" | "insurance" | "manual" | "amc"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -274,6 +324,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      doc_type: ["invoice", "warranty", "insurance", "manual", "amc"],
+    },
   },
 } as const
