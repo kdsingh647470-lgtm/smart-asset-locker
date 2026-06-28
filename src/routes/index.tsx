@@ -644,7 +644,15 @@ function MonthTasksSheet({
                     </button>
                   </div>
                 </div>
-                <div className="mt-2">
+                <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                  {t.task.vendor_name || t.task.vendor_phone ? (
+                    <a
+                      href={t.task.vendor_phone ? `tel:${t.task.vendor_phone.replace(/\s+/g, "")}` : undefined}
+                      className="inline-flex items-center gap-1 rounded-full bg-[oklch(0.94_0.07_158)] px-2.5 py-1 text-[10px] font-medium text-[oklch(0.32_0.13_158)]"
+                    >
+                      📞 {t.task.vendor_name || t.task.vendor_phone}
+                    </a>
+                  ) : null}
                   <a
                     href={partner}
                     target="_blank"
@@ -654,6 +662,7 @@ function MonthTasksSheet({
                     <Wrench className="h-3 w-3" /> Book service
                   </a>
                 </div>
+
               </div>
             );
           })}
@@ -711,6 +720,8 @@ function TaskForm({
   const [recurrence, setRecurrence] = useState<Recurrence>(editing?.recurrence ?? "yearly");
   const [dueDate, setDueDate] = useState(editing?.due_date ?? "");
   const [notes, setNotes] = useState(editing?.notes ?? "");
+  const [vendorName, setVendorName] = useState(editing?.vendor_name ?? "");
+  const [vendorPhone, setVendorPhone] = useState(editing?.vendor_phone ?? "");
   const [err, setErr] = useState<string | null>(null);
 
   const mut = useMutation({
@@ -725,7 +736,10 @@ function TaskForm({
         recurrence,
         due_date: dueDate || null,
         notes: notes.trim() || null,
+        vendor_name: vendorName.trim() || null,
+        vendor_phone: vendorPhone.trim() || null,
       };
+
       return editing ? updateMaintTask(editing.id, payload) : createMaintTask(payload, userId);
     },
 
@@ -793,13 +807,30 @@ function TaskForm({
       )}
 
 
+      <div className="grid grid-cols-2 gap-2">
+        <input
+          value={vendorName}
+          onChange={(e) => setVendorName(e.target.value)}
+          placeholder="Vendor / technician name"
+          className="rounded-md border border-border bg-surface-0 px-2.5 py-1.5 text-[12px]"
+        />
+        <input
+          type="tel"
+          inputMode="tel"
+          value={vendorPhone}
+          onChange={(e) => setVendorPhone(e.target.value)}
+          placeholder="Phone (e.g. +91…)"
+          className="rounded-md border border-border bg-surface-0 px-2.5 py-1.5 text-[12px]"
+        />
+      </div>
       <textarea
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
-        placeholder="Notes (vendor, last cost, phone)"
+        placeholder="Notes (last cost, parts replaced, next-time tips)"
         rows={2}
         className="w-full rounded-md border border-border bg-surface-0 px-2.5 py-1.5 text-[12px]"
       />
+
       {err && <p className="text-[11px] text-[oklch(0.55_0.18_25)]">{err}</p>}
       <div className="flex gap-2">
         <button

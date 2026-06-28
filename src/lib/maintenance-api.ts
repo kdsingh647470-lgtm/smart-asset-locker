@@ -14,6 +14,8 @@ export type MaintTask = {
   linked_item_id: string | null;
   done_at: string | null;
   notes: string | null;
+  vendor_name: string | null;
+  vendor_phone: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -26,7 +28,10 @@ export type NewMaintTask = {
   due_date?: string | null;
   notes?: string | null;
   linked_item_id?: string | null;
+  vendor_name?: string | null;
+  vendor_phone?: string | null;
 };
+
 
 export async function listMaintTasks(): Promise<MaintTask[]> {
   const { data, error } = await supabase
@@ -50,6 +55,9 @@ export async function createMaintTask(input: NewMaintTask, userId: string): Prom
       due_date: input.due_date ?? null,
       notes: input.notes ?? null,
       linked_item_id: input.linked_item_id ?? null,
+      vendor_name: input.vendor_name ?? null,
+      vendor_phone: input.vendor_phone ?? null,
+
     })
     .select()
     .single();
@@ -71,9 +79,12 @@ export async function updateMaintTask(
     "notes",
     "linked_item_id",
     "done_at",
+    "vendor_name",
+    "vendor_phone",
   ] as const) {
     if (patch[k] !== undefined) payload[k] = patch[k];
   }
+
   const { data, error } = await supabase
     .from("maintenance_tasks")
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
