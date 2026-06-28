@@ -1893,32 +1893,147 @@ function ScanMethod({ icon: Icon, name, sub }: { icon: LucideIcon; name: string;
 /* ------------------------- LOCKER ------------------------- */
 function Locker({ setTab }: { setTab: (t: TabKey) => void }) {
   const itemsQ = useQuery({ queryKey: ["items"], queryFn: listItems });
+  const docsQ = useQuery({ queryKey: ["documents"], queryFn: listDocuments });
+  const qc = useQueryClient();
   const isDemo = (itemsQ.data ?? []).length === 0;
-  const lockerIcons: Record<string, LucideIcon> = {
-    Invoices: FileCheck,
-    Warranties: ShieldCheck,
-    Insurance: ShieldHalf,
-    Manuals: BookOpen,
-    "Property docs": HomeIcon,
-    "Personal IDs": IdCard,
-    "Vehicle docs": Car,
-    "Medical records": HeartPulse,
-  };
+  const [activeCat, setActiveCat] = useState<DocType | null>(null);
+
+  const docCategories: { key: DocType; name: string; icon: LucideIcon; tone: string }[] = [
+    { key: "invoice", name: "Invoices", icon: FileCheck, tone: "text-[oklch(0.36_0.13_255)]" },
+    { key: "warranty", name: "Warranties", icon: ShieldCheck, tone: "text-[oklch(0.38_0.1_158)]" },
+    { key: "insurance", name: "Insurance", icon: ShieldHalf, tone: "text-[oklch(0.4_0.15_28)]" },
+    { key: "manual", name: "Manuals", icon: BookOpen, tone: "text-[oklch(0.4_0.1_70)]" },
+    { key: "amc", name: "AMC contracts", icon: Wrench, tone: "text-[oklch(0.36_0.13_255)]" },
+  ];
+
+  const docs = docsQ.data ?? [];
+  const items = itemsQ.data ?? [];
+  const countBy = (k: DocType) => docs.filter((d) => d.doc_type === k).length;
+  const itemName = (id: string | null) => items.find((i) => i.id === id)?.name ?? "Unlinked";
+  const activeDocs = activeCat ? docs.filter((d) => d.doc_type === activeCat) : [];
+
+  async function openDoc(d: ItemDocument) {
+    try {
+      const url = await getDocSignedUrl(d.file_path);
+      window.open(url, "_blank", "noopener");
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Could not open");
+    }
+  }
+
+  async function removeDoc(d: ItemDocument) {
+    if (!confirm(`Delete ${d.file_name}?`)) return;
+    await deleteDocument(d);
+    await qc.invalidateQueries({ queryKey: ["documents"] });
+  }
 
   return (
     <>
       {isDemo && <DemoBanner setTab={setTab} />}
       <div className="mb-3.5 flex items-center gap-2 rounded-xl border border-[oklch(0.78_0.12_158)] bg-[oklch(0.95_0.05_158)] px-3 py-2.5">
-
         <Lock className="h-[18px] w-[18px] flex-shrink-0 text-[oklch(0.38_0.1_158)]" />
         <p className="text-[12px] leading-snug text-[oklch(0.38_0.1_158)]">
-          All documents are AES-256 encrypted. Only you can access them.
+          Private, RLS-protected storage. Only you can access your documents.
         </p>
       </div>
 
+      <SectionTitle>Your documents</SectionTitle>
       <div className="mb-3 grid grid-cols-2 gap-2">
-        {LOCKER_CATEGORIES.map((c) => {
-          const Icon = lockerIcons[c.name] ?? FileText;
+        {docCategories.map((c) => {
+          const Icon = c.icon;
+          const n = countBy(c.key);
+          return (
+            <button
+              key={c.key}
+              type="button"
+              onClick={() => setActiveCat(c.key)}
+              className="rounded-xl border border-border bg-surface-2 p-3 text-left transition-colors hover:border-accent-blue"
+            >
+              <Icon className={`mb-1.5 h-[22px] w-[22px] ${c.tone}`} />
+              <div className="text-[12px] font-medium">{c.name}</div>
+              <div className="mt-0.5 text-[10px] text-text-muted">
+                {n} {n === 1 ? "file" : "files"}
+              </div>
+              <span className="mt-1.5 inline-block rounded bg-[oklch(0.95_0.05_158)] px-1.5 py-0.5 text-[10px] text-[oklch(0.38_0.1_158)]">
+                Tap to view
+              </span>
+            </button>
+          );
+        })}
+        <button
+          type="button"
+          onClick={() => setTab("scan")}
+          className="rounded-xl border border-dashed border-border bg-surface-2 p-3 text-left transition-colors hover:border-accent-blue"
+        >
+          <Plus className="mb-1.5 h-[22px] w-[22px] text-text-secondary" />
+          <div className="text-[12px] font-medium">Add document</div>
+          <div className="mt-0.5 text-[10px] text-text-muted">Scan or upload</div>
+        </button>
+      </div>
+
+      {activeCat && (
+        <div className="mb-3 rounded-xl border border-border bg-surface-2 p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <h3 className="text-[13px] font-medium">
+              {docCategories.find((c) => c.key === activeCat)?.name}
+            </h3>
+            <button
+              type="button"
+              onClick={() => setActiveCat(null)}
+              className="text-[11px] text-text-muted hover:text-text-primary"
+            >
+              Close
+            </button>
+          </div>
+          {activeDocs.length === 0 ? (
+            <p className="py-4 text-center text-[12px] text-text-muted">
+              No {activeCat} documents yet. Use Scan to add one.
+            </p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {activeDocs.map((d) => (
+                <li key={d.id} className="flex items-center gap-2 py-2.5">
+                  <FileText className="h-5 w-5 flex-shrink-0 text-text-muted" />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[12px] font-medium">{d.file_name}</div>
+                    <div className="truncate text-[10px] text-text-muted">
+                      {itemName(d.item_id)} · {(d.size_bytes / 1024).toFixed(0)} KB
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => openDoc(d)}
+                    className="rounded-md border border-border px-2 py-1 text-[11px] hover:border-accent-blue"
+                  >
+                    View
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeDoc(d)}
+                    className="rounded-md border border-border p-1 text-text-muted hover:border-bad hover:text-bad"
+                    aria-label="Delete"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      <SectionTitle>Other categories</SectionTitle>
+      <div className="mb-3 grid grid-cols-2 gap-2">
+        {LOCKER_CATEGORIES.filter((c) =>
+          ["Property docs", "Personal IDs", "Vehicle docs", "Medical records"].includes(c.name),
+        ).map((c) => {
+          const iconMap: Record<string, LucideIcon> = {
+            "Property docs": HomeIcon,
+            "Personal IDs": IdCard,
+            "Vehicle docs": Car,
+            "Medical records": HeartPulse,
+          };
+          const Icon = iconMap[c.name] ?? FileText;
           return (
             <button
               key={c.name}
@@ -1929,14 +2044,14 @@ function Locker({ setTab }: { setTab: (t: TabKey) => void }) {
               <div className="text-[12px] font-medium">{c.name}</div>
               <div className="mt-0.5 text-[10px] text-text-muted">{c.count}</div>
               <span className="mt-1.5 inline-block rounded bg-[oklch(0.95_0.05_158)] px-1.5 py-0.5 text-[10px] text-[oklch(0.38_0.1_158)]">
-                Encrypted
+                Coming soon
               </span>
             </button>
           );
         })}
       </div>
 
-      <SectionTitle>Home timeline — June 2024</SectionTitle>
+      <SectionTitle>Home timeline</SectionTitle>
       <ol className="space-y-0">
         {TIMELINE.map((t, i) => {
           const dotColor =
@@ -1965,6 +2080,7 @@ function Locker({ setTab }: { setTab: (t: TabKey) => void }) {
     </>
   );
 }
+
 
 /* ------------------------- AI ASSISTANT ------------------------- */
 function AIAssistant({ setTab }: { setTab: (t: TabKey) => void }) {
