@@ -715,8 +715,11 @@ function TaskForm({
 
   const mut = useMutation({
     mutationFn: () => {
+      const derivedMonth = dueDate
+        ? new Date(dueDate + "T00:00:00").getMonth()
+        : month;
       const payload = {
-        month,
+        month: derivedMonth,
         label: label.trim(),
         tone,
         recurrence,
@@ -725,6 +728,7 @@ function TaskForm({
       };
       return editing ? updateMaintTask(editing.id, payload) : createMaintTask(payload, userId);
     },
+
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["maintenance"] });
       onDone();
@@ -782,6 +786,12 @@ function TaskForm({
           className="w-full rounded-md border border-border bg-surface-0 px-2.5 py-1.5 text-[12px] text-foreground"
         />
       </label>
+      {dueDate && new Date(dueDate + "T00:00:00").getMonth() !== month && (
+        <p className="text-[11px] text-[oklch(0.55_0.15_60)]">
+          Heads up: this due date is in a different month — task will move to that month.
+        </p>
+      )}
+
 
       <textarea
         value={notes}
