@@ -1208,6 +1208,8 @@ function AddItemForm({
   const [purchasedAt, setPurchasedAt] = useState(editing?.purchased_at ?? "");
   const [warrantyUntil, setWarrantyUntil] = useState(editing?.warranty_until ?? "");
   const [err, setErr] = useState<string | null>(null);
+  const qc = useQueryClient();
+
 
   const mut = useMutation({
     mutationFn: () => {
