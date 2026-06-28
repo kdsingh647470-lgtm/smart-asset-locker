@@ -1,6 +1,6 @@
 import { createLovableAiGatewayProvider } from "@/lib/ai-gateway.server";
 import { createFileRoute } from "@tanstack/react-router";
-import { generateText, Output } from "ai";
+import { generateObject, generateText } from "ai";
 import { z } from "zod";
 
 const RoomEnum = z
@@ -8,15 +8,15 @@ const RoomEnum = z
   .describe("Best-guess room for this item");
 
 const InvoiceSchema = z.object({
-  name: z.string().describe("Product name, e.g. 'LG Front Load Washing Machine'"),
-  brand: z.string().nullable(),
-  serial: z.string().nullable().describe("Serial / model number if visible"),
+  name: z.string().describe("Primary product name, e.g. 'Qubo Car Dashcam Pro 4K'. For multi-item invoices, pick the highest-value line item."),
+  brand: z.string().nullable().describe("Brand only, e.g. 'Qubo', 'LG', 'Samsung'"),
+  serial: z.string().nullable().describe("Serial / model / ASIN if visible"),
   room: RoomEnum,
-  price_paid: z.number().describe("Purchase price in INR (₹). 0 if not found."),
-  price_now: z.number().describe("Estimated current market value in INR (₹) after depreciation."),
-  purchased_at: z.string().nullable().describe("Purchase date YYYY-MM-DD"),
+  price_paid: z.number().describe("Grand total paid in INR (₹). Use 0 if not found."),
+  price_now: z.number().describe("Estimated current market value in INR (₹) after depreciation. Use 0 if you can't estimate."),
+  purchased_at: z.string().nullable().describe("Invoice / purchase date in YYYY-MM-DD format. Convert dd.mm.yyyy or dd/mm/yyyy."),
   warranty_until: z.string().nullable().describe("Warranty end date YYYY-MM-DD if computable"),
-  seller: z.string().nullable(),
+  seller: z.string().nullable().describe("Seller / merchant name, e.g. 'Amazon', 'ETRADE MARKETING PRIVATE LIMITED'"),
   confidence: z.enum(["low", "medium", "high"]),
 });
 
@@ -69,15 +69,15 @@ const AmcSchema = z.object({
 
 const DOC_PROMPTS = {
   invoice:
-    "Extract structured invoice data from this document. Estimate current market value in INR based on typical depreciation for the product category. Set unseen fields to null or 0.",
+    "Extract structured invoice data. Use these EXACT JSON keys: name, brand, serial, room, price_paid (INR grand total as a number), price_now (your estimated current market value in INR after depreciation; use category norms — Electronics ~30%/yr, Appliances ~15%/yr, Furniture ~10%/yr), purchased_at (YYYY-MM-DD), warranty_until (YYYY-MM-DD or null), seller, confidence. If invoice has multiple line items, pick the SINGLE highest-value product as the primary item. Use null for unknown strings/dates and 0 for unknown numbers. Convert dd.mm.yyyy and dd/mm/yyyy dates to YYYY-MM-DD.",
   warranty:
-    "Extract warranty information from this document. Identify the product, provider, coverage, and warranty end date.",
+    "Extract warranty information. Use these EXACT JSON keys: name, brand, serial, room, provider, coverage, warranty_until (YYYY-MM-DD), claim_number, confidence. Use null for unknown values.",
   insurance:
-    "Extract insurance policy details. Identify insurer, policy number, sum insured (INR), annual premium (INR), and policy end date.",
+    "Extract insurance policy details. Use these EXACT JSON keys: name, brand, room, insurer, policy_number, sum_insured (INR number), premium (INR number), insured_until (YYYY-MM-DD), coverage, confidence. Use null/0 for unknown.",
   manual:
-    "Identify the product this manual is for. Extract brand, model number, product category, and a brief specs summary.",
+    "Identify the product this manual is for. Use these EXACT JSON keys: name, brand, serial (model number), room, category, key_specs, confidence.",
   amc:
-    "Extract Annual Maintenance Contract details. Identify the covered item, provider, contract number, AMC end date, scope of service, and service contact.",
+    "Extract Annual Maintenance Contract details. Use these EXACT JSON keys: name, brand, room, provider, contract_number, amc_until (YYYY-MM-DD), scope, contact, confidence.",
 } as const;
 
 const SCHEMAS = {
@@ -101,6 +101,68 @@ type ScanBody = {
 
 const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
 
+// Best-effort YYYY-MM-DD from common Indian invoice date formats.
+function normalizeDate(input: unknown): string | null {
+  if (typeof input !== "string") return null;
+  const s = input.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const m = s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})/);
+  if (m) {
+    const dd = m[1].padStart(2, "0");
+    const mm = m[2].padStart(2, "0");
+    const yyyy = m[3].length === 2 ? `20${m[3]}` : m[3];
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  return null;
+}
+
+function pickNumber(...candidates: unknown[]): number {
+  for (const c of candidates) {
+    if (typeof c === "number" && Number.isFinite(c) && c > 0) return c;
+    if (typeof c === "string") {
+      const n = Number(c.replace(/[^0-9.]/g, ""));
+      if (Number.isFinite(n) && n > 0) return n;
+    }
+  }
+  return 0;
+}
+
+function pickString(...candidates: unknown[]): string | null {
+  for (const c of candidates) {
+    if (typeof c === "string" && c.trim()) return c.trim();
+  }
+  return null;
+}
+
+// Map a free-form Gemini JSON response to our invoice shape.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function salvageInvoice(raw: any): z.infer<typeof InvoiceSchema> | null {
+  if (!raw || typeof raw !== "object") return null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const firstItem: any = Array.isArray(raw.items) && raw.items.length > 0 ? raw.items[0] : {};
+  const name = pickString(raw.name, raw.product_name, firstItem.name, firstItem.description, firstItem.product);
+  if (!name) return null;
+  return {
+    name,
+    brand: pickString(raw.brand, firstItem.brand),
+    serial: pickString(raw.serial, raw.asin, raw.model, firstItem.hsn, firstItem.asin),
+    room: "other",
+    price_paid: pickNumber(
+      raw.price_paid,
+      raw.total_amount,
+      raw.grand_total,
+      raw.invoice_total,
+      firstItem.item_total,
+      firstItem.net_amount,
+    ),
+    price_now: pickNumber(raw.price_now, raw.current_market_value_inr, firstItem.current_market_value_inr),
+    purchased_at: normalizeDate(raw.purchased_at ?? raw.invoice_date ?? raw.order_date ?? raw.date),
+    warranty_until: normalizeDate(raw.warranty_until),
+    seller: pickString(raw.seller, raw.seller_name, raw.merchant, raw.vendor),
+    confidence: "medium",
+  };
+}
+
 export const Route = createFileRoute("/api/scan-invoice")({
   server: {
     handlers: {
@@ -120,7 +182,6 @@ export const Route = createFileRoute("/api/scan-invoice")({
           return json({ error: "Invalid docType" }, 400);
         }
 
-        // Rough size guard (base64 ~4/3 of bytes)
         const b64 = dataUrl.split(",")[1] ?? "";
         const approxBytes = Math.floor((b64.length * 3) / 4);
         if (approxBytes > MAX_BYTES) {
@@ -134,49 +195,69 @@ export const Route = createFileRoute("/api/scan-invoice")({
         const model = gateway("google/gemini-2.5-flash");
 
         const isPdf = mimeType === "application/pdf";
+        const mediaBlock = isPdf
+          ? { type: "file" as const, data: dataUrl, mediaType: "application/pdf", filename: fileName }
+          : { type: "image" as const, image: dataUrl };
+        const promptBlock = { type: "text" as const, text: DOC_PROMPTS[docType] };
 
+        // Pass 1: structured generation with the real schema as a response_format constraint.
         try {
-          const { output } = await generateText({
+          const { object } = await generateObject({
             model,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            output: Output.object({ schema: SCHEMAS[docType] as any }),
-            messages: [
-              {
-                role: "user",
-                content: [
-                  { type: "text", text: DOC_PROMPTS[docType] },
-                  isPdf
-                    ? {
-                        type: "file",
-                        data: dataUrl,
-                        mediaType: "application/pdf",
-                        filename: fileName,
-                      }
-                    : { type: "image", image: dataUrl },
-                ],
-              },
-            ],
+            schema: SCHEMAS[docType] as any,
+            messages: [{ role: "user", content: [promptBlock, mediaBlock] }],
           });
-
-          return json({ docType, data: output });
+          return json({ docType, data: object });
         } catch (err) {
           const message = err instanceof Error ? err.message : "Scan failed";
-          console.error("scan-invoice failed:", message);
-          // Schema-mismatch / empty doc / model refusal: return 200 so the UI
-          // can show a friendly message instead of crashing the route.
+          console.error("scan-invoice generateObject failed:", message);
+
+          // Pass 2 (salvage): ask for raw JSON, then best-effort remap common keys.
+          if (docType === "invoice") {
+            try {
+              const { text } = await generateText({
+                model,
+                messages: [
+                  {
+                    role: "user",
+                    content: [
+                      {
+                        type: "text",
+                        text:
+                          "Extract this invoice as JSON. Reply with ONLY a JSON object (no markdown fences, no commentary). Include at minimum: product name, brand, total amount in INR, invoice date, seller name. If multiple items, focus on the most expensive one.",
+                      },
+                      mediaBlock,
+                    ],
+                  },
+                ],
+              });
+              const jsonMatch = text.match(/\{[\s\S]*\}/);
+              if (jsonMatch) {
+                const parsed = JSON.parse(jsonMatch[0]);
+                const salvaged = salvageInvoice(parsed);
+                if (salvaged) {
+                  return json({ docType, data: salvaged, partial: true });
+                }
+              }
+            } catch (salvageErr) {
+              console.error("scan-invoice salvage failed:", salvageErr);
+            }
+          }
+
           const isSchemaMiss =
-            /did not match schema|No object generated|schema/i.test(message);
-          if (isSchemaMiss) {
-            return json({
-              error:
-                "Couldn't read this document. Try a clearer photo, a different page, or fill the details manually.",
+            /did not match schema|No object generated|schema|validation/i.test(message);
+          return json(
+            {
+              error: isSchemaMiss
+                ? "Couldn't fully read this document. Try a clearer photo or fill the details manually."
+                : message,
               fallback: true,
               docType,
-            });
-          }
-          return json({ error: message, fallback: true }, 200);
+            },
+            200,
+          );
         }
-
       },
     },
   },
