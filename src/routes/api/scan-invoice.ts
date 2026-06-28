@@ -181,9 +181,6 @@ export const Route = createFileRoute("/api/scan-invoice")({
         if (!dataUrl || !dataUrl.startsWith("data:")) {
           return json({ error: "fileDataUrl required" }, 400);
         }
-        if (!(docType in SCHEMAS)) {
-          return json({ error: "Invalid docType" }, 400);
-        }
 
         const b64 = dataUrl.split(",")[1] ?? "";
         const approxBytes = Math.floor((b64.length * 3) / 4);
