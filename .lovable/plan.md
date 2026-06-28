@@ -1,46 +1,45 @@
-# Scan Upgrade: PDFs, Doc Types, Locker Attachments
+# Fix: PDF scan extracts perfectly but nothing reaches the form
 
-Three upgrades to the Scan tab so it handles more than just invoice photos and the original file ends up safely in the Locker, linked to the right item.
+## What's actually happening
 
-## 1. Accept PDF + multi-page uploads
+Looked at the AI Gateway log for your last PDF upload (log `019f0c7f-84f4-7bc8-b07a-623d66f478d7`). Gemini read the Amazon invoice **flawlessly** — pulled "Qubo Car Dashcam Pro 4K", ₹12,240, seller ETRADE MARKETING, invoice date 22.10.2025, even an estimated current market value of ₹8,500.
 
-- Scan tab's Upload picker accepts `image/*,application/pdf` (camera button stays image-only).
-- Server endpoint `src/routes/api/scan-invoice.ts` accepts either an image or a PDF:
-  - Image → sent to Gemini as `image_url` (today's path).
-  - PDF → sent as a `file` content block with `data:application/pdf;base64,...` and the real filename; Gemini reads all pages.
-- Bump server body limit and add a 10 MB / 20-page guard with a clear error.
+The problem is purely on our side: the model returned JSON with *its own field names* (`invoice_number`, `seller_name`, `items[]`, `total_amount`) instead of *our* field names (`name`, `brand`, `price_paid`, `price_now`, `room`, `purchased_at`). The AI SDK's `Output.object` only validates — it doesn't actually force Gemini to use our schema — so validation failed and we showed "Couldn't read this document".
 
-## 2. Document type selector
+## The fix (3 small changes in `src/routes/api/scan-invoice.ts`)
 
-Before sending, user picks one of: **Invoice · Warranty · Insurance · Manual · AMC**.
+### 1. Use `generateObject` instead of `generateText` + `Output.object`
 
-- Each type uses a tailored extraction schema (AI SDK `Output.object`) so the right fields come back:
-  - Invoice: today's fields (name, brand, model, serial, price_paid, price_now, purchased_at, warranty_until, seller).
-  - Warranty: provider, coverage type, warranty_until, claim/policy number, terms summary.
-  - Insurance: insurer, policy number, sum insured, premium, insured_until, coverage notes.
-  - Manual: brand, model, product category, key specs (no dates).
-  - AMC: provider, contract number, amc_until, scope, contact.
-- Confirm screen shows only the relevant fields and writes back to the matching `items` columns (`warranty_until`, `insured_until`, `amc_until`, `has_manual`, `has_invoice`, `notes`).
-- User can pick "Attach to existing item" (dropdown of their inventory) or "Create new item".
+`generateObject` from the `ai` package sends the schema as a real `response_format` constraint to OpenRouter/Gemini, which forces the model to emit exactly the field names we ask for. This alone fixes the dashcam invoice case.
 
-## 3. Store original file in the Locker + auto-fill lifecycle dots
+### 2. Tighten the prompt with field names + a worked example
 
-- New Supabase Storage bucket `item-documents` (private, RLS: `auth.uid() = owner`).
-- New table `public.item_documents`:
-  - `item_id` (FK → items), `user_id`, `doc_type` (invoice/warranty/insurance/manual/amc), `file_path`, `file_name`, `mime_type`, `size_bytes`, `extracted_json`, `created_at`.
-  - GRANTs + RLS scoped to `auth.uid() = user_id`.
-- On successful scan: upload original file to `item-documents/{user_id}/{item_id}/{uuid}-{filename}`, insert `item_documents` row, and set the corresponding flag on the item:
-  - invoice → `has_invoice = true`
-  - manual → `has_manual = true`
-  - warranty/insurance/amc → set the matching expiry date if extracted.
-- Locker tab: each of the 5 existing categories (invoices, warranties, insurance, manuals, AMC) now lists the real uploaded docs grouped by item, with tap-to-view (signed URL, 1-hour expiry) and delete.
-- Inventory lifecycle dots (Invoice/Warranty/AMC/Insurance/Manual) read from `item_documents` + date columns, so they turn green automatically once a doc is filed.
+Tell Gemini explicitly: "Use these exact JSON keys: `name`, `brand`, `serial`, `room`, `price_paid` (the grand total in INR), `price_now` (your estimate after depreciation), `purchased_at` (YYYY-MM-DD), `warranty_until`, `seller`. If a field is unknown, use null for strings/dates and 0 for numbers."
 
-## Technical notes
+For multi-item invoices like the dashcam one, instruct: "If the invoice has multiple line items, pick the primary product (highest value) and put it in `name`."
 
-- Files: edit `src/routes/api/scan-invoice.ts`, `src/routes/index.tsx` (Scan + Locker tabs), `src/lib/items-api.ts`; add `src/lib/documents-api.ts`.
-- One migration: create `item_documents` table (with GRANTs, RLS, `update_updated_at_column` trigger) and the `item-documents` storage bucket policies.
-- AI model unchanged (`google/gemini-2.5-flash` — supports PDF file input). Per-doc-type schemas kept small to stay under Gemini's structured-output state limit.
-- Gmail auto-import and email-forward inbox are explicitly **out of scope** for this round.
+### 3. Salvage fallback when the schema still misses
 
-Shall I build it?
+If `generateObject` still throws (rare — e.g. model returned prose), do a second pass with `generateText` (no schema) asking for raw JSON, then best-effort map common keys:
+- `invoice_number` / `order_number` → notes
+- `total_amount` / `item_total` / `grand_total` → `price_paid`
+- `current_market_value_inr` → `price_now`
+- `invoice_date` → `purchased_at` (parse dd.mm.yyyy / dd/mm/yyyy → YYYY-MM-DD)
+- `items[0].description` → `name`
+- `seller_name` → `seller`
+
+Return `{ data, partial: true }` so the UI shows a "Please verify" hint above the prefilled form.
+
+## What stays the same
+
+- Same model (`google/gemini-2.5-flash`), same PDF/image upload path, same 10 MB cap.
+- Same five doc types and Zod schemas (the keys are correct — they just weren't being enforced).
+- Same 200-with-fallback error contract that we shipped last turn, so the UI never blanks again.
+
+## How we'll verify
+
+After the change, re-upload the same dashcam PDF. Expected: confirm screen pre-fills with name "Qubo Car Dashcam Pro 4K", brand "Qubo", price_paid 12240, price_now 8500, purchased_at 2025-10-22, seller "ETRADE MARKETING PRIVATE LIMITED". Then check the AI Gateway log to confirm the response now matches our schema keys.
+
+## Files touched
+
+- `src/routes/api/scan-invoice.ts` — swap to `generateObject`, sharpen prompts per doc type, add salvage fallback. ~40 lines changed, no new files, no migration.
