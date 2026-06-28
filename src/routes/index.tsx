@@ -1574,6 +1574,18 @@ function Scan() {
           onChange={(e) => {
             const f = e.target.files?.[0];
             if (f) onFile(f);
+            e.target.value = "";
+          }}
+        />
+        <input
+          ref={uploadRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) onFile(f);
+            e.target.value = "";
           }}
         />
         <div className="grid grid-cols-2 gap-2 p-3">
@@ -1588,13 +1600,14 @@ function Scan() {
           </button>
           <button
             type="button"
-            onClick={() => fileRef.current?.click()}
+            onClick={() => uploadRef.current?.click()}
             className="rounded-xl border border-border bg-surface-1 p-3 text-center transition-colors hover:border-accent-blue hover:bg-surface-2"
           >
             <FileUp className="mx-auto mb-1.5 h-5 w-5 text-text-secondary" />
             <div className="text-[12px] font-medium">Upload image</div>
             <div className="mt-0.5 text-[10px] text-text-muted">JPG, PNG, screenshot</div>
           </button>
+
           <ScanMethod icon={MailPlus} name="Gmail import" sub="Coming soon" />
           <ScanMethod icon={QrCode} name="Scan QR label" sub="Coming soon" />
         </div>
