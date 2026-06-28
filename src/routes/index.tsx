@@ -798,13 +798,30 @@ function TaskForm({
       )}
 
 
+      <div className="grid grid-cols-2 gap-2">
+        <input
+          value={vendorName}
+          onChange={(e) => setVendorName(e.target.value)}
+          placeholder="Vendor / technician name"
+          className="rounded-md border border-border bg-surface-0 px-2.5 py-1.5 text-[12px]"
+        />
+        <input
+          type="tel"
+          inputMode="tel"
+          value={vendorPhone}
+          onChange={(e) => setVendorPhone(e.target.value)}
+          placeholder="Phone (e.g. +91…)"
+          className="rounded-md border border-border bg-surface-0 px-2.5 py-1.5 text-[12px]"
+        />
+      </div>
       <textarea
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
-        placeholder="Notes (vendor, last cost, phone)"
+        placeholder="Notes (last cost, parts replaced, next-time tips)"
         rows={2}
         className="w-full rounded-md border border-border bg-surface-0 px-2.5 py-1.5 text-[12px]"
       />
+
       {err && <p className="text-[11px] text-[oklch(0.55_0.18_25)]">{err}</p>}
       <div className="flex gap-2">
         <button
