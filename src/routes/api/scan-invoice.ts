@@ -88,7 +88,10 @@ const SCHEMAS = {
   amc: AmcSchema,
 } as const;
 
-type DocType = keyof typeof SCHEMAS;
+const REAL_DOC_TYPES = ["invoice", "warranty", "insurance", "manual", "amc"] as const;
+
+type RealDocType = (typeof REAL_DOC_TYPES)[number];
+type DocType = RealDocType | "any";
 
 type ScanBody = {
   fileDataUrl?: string;
