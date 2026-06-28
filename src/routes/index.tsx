@@ -773,12 +773,16 @@ function TaskForm({
           <option value="yearly">Yearly</option>
         </select>
       </div>
-      <input
-        type="date"
-        value={dueDate}
-        onChange={(e) => setDueDate(e.target.value)}
-        className="w-full rounded-md border border-border bg-surface-0 px-2.5 py-1.5 text-[12px]"
-      />
+      <label className="flex flex-col gap-1 text-[11px] text-muted-foreground">
+        Due date (optional) <span className="text-[10px] opacity-70">— exact day this task is due. Leave blank to just keep it in the chosen month.</span>
+        <input
+          type="date"
+          value={dueDate}
+          onChange={(e) => setDueDate(e.target.value)}
+          className="w-full rounded-md border border-border bg-surface-0 px-2.5 py-1.5 text-[12px] text-foreground"
+        />
+      </label>
+
       <textarea
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
@@ -1235,20 +1239,25 @@ function AddItemForm({
           onChange={(e) => setPrice(e.target.value)}
           className="rounded-md border border-border bg-surface-0 px-2.5 py-2 text-[12px] outline-none focus:border-brand"
         />
-        <input
-          type="date"
-          placeholder="Purchase date"
-          value={purchasedAt}
-          onChange={(e) => setPurchasedAt(e.target.value)}
-          className="rounded-md border border-border bg-surface-0 px-2.5 py-2 text-[12px] outline-none focus:border-brand"
-        />
-        <input
-          type="date"
-          placeholder="Warranty until"
-          value={warrantyUntil}
-          onChange={(e) => setWarrantyUntil(e.target.value)}
-          className="col-span-2 rounded-md border border-border bg-surface-0 px-2.5 py-2 text-[12px] outline-none focus:border-brand"
-        />
+        <label className="flex flex-col gap-1 text-[11px] text-muted-foreground">
+          Purchase date <span className="text-[10px] opacity-70">(when you bought it)</span>
+          <input
+            type="date"
+            value={purchasedAt}
+            onChange={(e) => setPurchasedAt(e.target.value)}
+            className="rounded-md border border-border bg-surface-0 px-2.5 py-2 text-[12px] text-foreground outline-none focus:border-brand"
+          />
+        </label>
+        <label className="col-span-2 flex flex-col gap-1 text-[11px] text-muted-foreground">
+          Warranty expiry date <span className="text-[10px] opacity-70">(last day warranty is valid — used for renewal alerts)</span>
+          <input
+            type="date"
+            value={warrantyUntil}
+            onChange={(e) => setWarrantyUntil(e.target.value)}
+            className="rounded-md border border-border bg-surface-0 px-2.5 py-2 text-[12px] text-foreground outline-none focus:border-brand"
+          />
+        </label>
+
       </div>
       {err && (
         <p className="rounded-md bg-[oklch(0.96_0.04_25)] px-2.5 py-1.5 text-[11px] text-[oklch(0.42_0.15_25)]">
