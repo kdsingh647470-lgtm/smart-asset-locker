@@ -79,9 +79,12 @@ export async function updateMaintTask(
     "notes",
     "linked_item_id",
     "done_at",
+    "vendor_name",
+    "vendor_phone",
   ] as const) {
     if (patch[k] !== undefined) payload[k] = patch[k];
   }
+
   const { data, error } = await supabase
     .from("maintenance_tasks")
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
