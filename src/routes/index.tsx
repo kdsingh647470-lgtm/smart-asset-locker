@@ -1507,7 +1507,9 @@ type ScanResponse = {
   docType: DocType;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: any;
+  partial?: boolean;
 };
+
 
 function Scan() {
   const { user } = useAuth();
@@ -1738,11 +1740,17 @@ function Scan() {
           )}
           {result && (
             <div className="space-y-2">
+              {result.partial && (
+                <div className="rounded-md bg-amber-50 px-2 py-1.5 text-[11px] text-amber-800 ring-1 ring-amber-200">
+                  Couldn't extract every field — please verify before saving.
+                </div>
+              )}
               <div className="text-[13px] font-medium">{d.name ?? "—"}</div>
               <div className="text-[11px] text-text-muted">
                 {(d.brand ?? "—") + " · " + capitalize(String(d.room ?? "other"))}
                 {d.confidence ? ` · confidence ${d.confidence}` : ""}
               </div>
+
               <div className="grid grid-cols-2 gap-2 text-[11px]">
                 {docType === "invoice" && (
                   <>
