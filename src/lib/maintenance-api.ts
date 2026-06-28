@@ -55,6 +55,9 @@ export async function createMaintTask(input: NewMaintTask, userId: string): Prom
       due_date: input.due_date ?? null,
       notes: input.notes ?? null,
       linked_item_id: input.linked_item_id ?? null,
+      vendor_name: input.vendor_name ?? null,
+      vendor_phone: input.vendor_phone ?? null,
+
     })
     .select()
     .single();
