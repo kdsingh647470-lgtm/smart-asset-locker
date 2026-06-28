@@ -7,6 +7,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { createItem, deleteItem, listItems, updateItem, type DbItem, type NewItem } from "@/lib/items-api";
 import {
+  listDocuments,
+  uploadDocument,
+  getDocSignedUrl,
+  deleteDocument,
+  type DocType,
+  type ItemDocument,
+} from "@/lib/documents-api";
+import {
   listMaintTasks,
   createMaintTask,
   updateMaintTask,
