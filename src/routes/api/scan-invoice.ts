@@ -88,7 +88,10 @@ const SCHEMAS = {
   amc: AmcSchema,
 } as const;
 
-type DocType = keyof typeof SCHEMAS;
+const REAL_DOC_TYPES = ["invoice", "warranty", "insurance", "manual", "amc"] as const;
+
+type RealDocType = (typeof REAL_DOC_TYPES)[number];
+type DocType = RealDocType | "any";
 
 type ScanBody = {
   fileDataUrl?: string;
@@ -178,9 +181,6 @@ export const Route = createFileRoute("/api/scan-invoice")({
         if (!dataUrl || !dataUrl.startsWith("data:")) {
           return json({ error: "fileDataUrl required" }, 400);
         }
-        if (!(docType in SCHEMAS)) {
-          return json({ error: "Invalid docType" }, 400);
-        }
 
         const b64 = dataUrl.split(",")[1] ?? "";
         const approxBytes = Math.floor((b64.length * 3) / 4);
@@ -198,23 +198,54 @@ export const Route = createFileRoute("/api/scan-invoice")({
         const mediaBlock = isPdf
           ? { type: "file" as const, data: dataUrl, mediaType: "application/pdf", filename: fileName }
           : { type: "image" as const, image: dataUrl };
-        const promptBlock = { type: "text" as const, text: DOC_PROMPTS[docType] };
+
+        // Resolve "any" into a real document type first
+        let resolvedDocType: RealDocType = docType as RealDocType;
+        if (docType === "any") {
+          try {
+            const { text } = await generateText({
+              model,
+              messages: [
+                {
+                  role: "user",
+                  content: [
+                    {
+                      type: "text",
+                      text: `Classify this document. Reply with ONLY one word from this list: invoice, warranty, insurance, manual, amc. No explanation, no punctuation.`,
+                    },
+                    mediaBlock,
+                  ],
+                },
+              ],
+            });
+            const clean = text.toLowerCase().trim().replace(/[^a-z]/g, "");
+            if (REAL_DOC_TYPES.includes(clean as RealDocType)) {
+              resolvedDocType = clean as RealDocType;
+            } else {
+              resolvedDocType = "invoice";
+            }
+          } catch {
+            resolvedDocType = "invoice";
+          }
+        }
+
+        const promptBlock = { type: "text" as const, text: DOC_PROMPTS[resolvedDocType] };
 
         // Pass 1: structured generation with the real schema as a response_format constraint.
         try {
           const { object } = await generateObject({
             model,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            schema: SCHEMAS[docType] as any,
+            schema: SCHEMAS[resolvedDocType] as any,
             messages: [{ role: "user", content: [promptBlock, mediaBlock] }],
           });
-          return json({ docType, data: object });
+          return json({ docType: resolvedDocType, data: object });
         } catch (err) {
           const message = err instanceof Error ? err.message : "Scan failed";
           console.error("scan-invoice generateObject failed:", message);
 
           // Pass 2 (salvage): ask for raw JSON, then best-effort remap common keys.
-          if (docType === "invoice") {
+          if (resolvedDocType === "invoice") {
             try {
               const { text } = await generateText({
                 model,
@@ -237,7 +268,7 @@ export const Route = createFileRoute("/api/scan-invoice")({
                 const parsed = JSON.parse(jsonMatch[0]);
                 const salvaged = salvageInvoice(parsed);
                 if (salvaged) {
-                  return json({ docType, data: salvaged, partial: true });
+                  return json({ docType: resolvedDocType, data: salvaged, partial: true });
                 }
               }
             } catch (salvageErr) {
@@ -253,7 +284,7 @@ export const Route = createFileRoute("/api/scan-invoice")({
                 ? "Couldn't fully read this document. Try a clearer photo or fill the details manually."
                 : message,
               fallback: true,
-              docType,
+              docType: resolvedDocType,
             },
             200,
           );

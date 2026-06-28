@@ -1495,7 +1495,9 @@ function capitalize(s: string) {
 }
 
 /* ------------------------- SCAN ------------------------- */
-const DOC_TYPES: { key: DocType; label: string; hint: string }[] = [
+type ScanDocType = DocType | "any";
+const DOC_TYPES: { key: ScanDocType; label: string; hint: string }[] = [
+  { key: "any", label: "Any", hint: "Auto-detect" },
   { key: "invoice", label: "Invoice", hint: "Bill / receipt" },
   { key: "warranty", label: "Warranty", hint: "Card / certificate" },
   { key: "insurance", label: "Insurance", hint: "Policy doc" },
@@ -1516,7 +1518,7 @@ function Scan() {
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement | null>(null);
   const uploadRef = useRef<HTMLInputElement | null>(null);
-  const [docType, setDocType] = useState<DocType>("invoice");
+  const [docType, setDocType] = useState<ScanDocType>("any");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [dataUrl, setDataUrl] = useState<string | null>(null);
@@ -1587,14 +1589,15 @@ function Scan() {
       ...(d.insured_until ? { insured_until: d.insured_until } : {}),
       ...(d.amc_until ? { amc_until: d.amc_until } : {}),
     };
-    if (docType === "invoice") patch.has_invoice = true;
-    if (docType === "manual") patch.has_manual = true;
+    const saveDocType = result.docType;
+    if (saveDocType === "invoice") patch.has_invoice = true;
+    if (saveDocType === "manual") patch.has_manual = true;
 
     try {
       if (attachTo === "new") {
         const created = await createItem(
           {
-            name: patch.name ?? d.name ?? `${docType[0].toUpperCase()}${docType.slice(1)} item`,
+            name: patch.name ?? d.name ?? `${saveDocType[0].toUpperCase()}${saveDocType.slice(1)} item`,
             room: patch.room ?? "other",
             price_paid: patch.price_paid ?? 0,
             ...patch,
@@ -1609,7 +1612,7 @@ function Scan() {
       await uploadDocument({
         userId: user.id,
         itemId,
-        docType,
+        docType: saveDocType,
         file,
         extracted: d,
       });
@@ -1752,7 +1755,7 @@ function Scan() {
               </div>
 
               <div className="grid grid-cols-2 gap-2 text-[11px]">
-                {docType === "invoice" && (
+                {result.docType === "invoice" && (
                   <>
                     <KV k="Paid" v={d.price_paid ? inr(d.price_paid) : "—"} />
                     <KV k="Now" v={d.price_now ? inr(d.price_now) : "—"} />
@@ -1762,7 +1765,7 @@ function Scan() {
                     <KV k="Seller" v={d.seller ?? "—"} />
                   </>
                 )}
-                {docType === "warranty" && (
+                {result.docType === "warranty" && (
                   <>
                     <KV k="Provider" v={d.provider ?? "—"} />
                     <KV k="Ends" v={d.warranty_until ?? "—"} />
@@ -1771,7 +1774,7 @@ function Scan() {
                     <KV k="Coverage" v={d.coverage ?? "—"} />
                   </>
                 )}
-                {docType === "insurance" && (
+                {result.docType === "insurance" && (
                   <>
                     <KV k="Insurer" v={d.insurer ?? "—"} />
                     <KV k="Policy #" v={d.policy_number ?? "—"} />
@@ -1781,14 +1784,14 @@ function Scan() {
                     <KV k="Coverage" v={d.coverage ?? "—"} />
                   </>
                 )}
-                {docType === "manual" && (
+                {result.docType === "manual" && (
                   <>
                     <KV k="Category" v={d.category ?? "—"} />
                     <KV k="Model" v={d.serial ?? "—"} />
                     <KV k="Specs" v={d.key_specs ?? "—"} />
                   </>
                 )}
-                {docType === "amc" && (
+                {result.docType === "amc" && (
                   <>
                     <KV k="Provider" v={d.provider ?? "—"} />
                     <KV k="Contract #" v={d.contract_number ?? "—"} />
