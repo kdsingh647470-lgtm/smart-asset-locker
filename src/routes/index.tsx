@@ -1597,7 +1597,7 @@ function Scan() {
       if (attachTo === "new") {
         const created = await createItem(
           {
-            name: patch.name ?? d.name ?? `${docType[0].toUpperCase()}${docType.slice(1)} item`,
+            name: patch.name ?? d.name ?? `${saveDocType[0].toUpperCase()}${saveDocType.slice(1)} item`,
             room: patch.room ?? "other",
             price_paid: patch.price_paid ?? 0,
             ...patch,
