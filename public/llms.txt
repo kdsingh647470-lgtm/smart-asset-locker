@@ -1,0 +1,9 @@
+# GharLog
+
+> GharLog is India's Digital Home Asset Manager — an encrypted vault for every appliance, warranty, invoice, insurance policy and service record in your home.
+
+GharLog helps Indian households track what they own, when warranties and insurance expire, when AMC and maintenance is due, and where every document lives. It uses AI to read invoices and warranty cards, and includes a maintenance calendar, document locker, insurance gap analysis and a service marketplace.
+
+## Pages
+
+- [Home](/): Product overview — dashboard, inventory, scan, locker, AI assistant, insurance and maintenance calendar.
