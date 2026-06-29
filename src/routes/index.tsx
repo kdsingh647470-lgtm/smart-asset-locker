@@ -92,7 +92,15 @@ export const Route = createFileRoute("/")({
         content:
           "Track every appliance, warranty, document and insurance for your home in one encrypted vault.",
       },
+      { property: "og:title", content: "GharLog — India's Digital Home Asset Manager" },
+      {
+        property: "og:description",
+        content:
+          "Track every appliance, warranty, document and insurance for your home in one encrypted vault.",
+      },
+      { property: "og:url", content: "https://smart-asset-locker.lovable.app/" },
     ],
+    links: [{ rel: "canonical", href: "https://smart-asset-locker.lovable.app/" }],
   }),
   component: GharLogApp,
 });

@@ -93,8 +93,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content: "Your home's assets, warranties, documents and insurance in one encrypted vault.",
       },
       { property: "og:type", content: "website" },
+      { property: "og:site_name", content: "GharLog" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:title", content: "GharLog — India's Digital Home Asset Manager" },
+      {
+        name: "twitter:description",
+        content: "Your home's assets, warranties, documents and insurance in one encrypted vault.",
+      },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -106,6 +111,29 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
+      },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@graph": [
+            {
+              "@type": "Organization",
+              name: "GharLog",
+              url: "https://smart-asset-locker.lovable.app",
+              logo: "https://smart-asset-locker.lovable.app/icon-512.png",
+              description:
+                "India's Digital Home Asset Manager — track appliances, warranties, documents and insurance in one encrypted vault.",
+            },
+            {
+              "@type": "WebSite",
+              name: "GharLog",
+              url: "https://smart-asset-locker.lovable.app",
+            },
+          ],
+        }),
       },
     ],
   }),

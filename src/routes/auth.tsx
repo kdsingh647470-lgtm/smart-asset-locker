@@ -10,7 +10,15 @@ export const Route = createFileRoute("/auth")({
     meta: [
       { title: "Sign in — GharLog" },
       { name: "description", content: "Sign in to your encrypted GharLog home asset vault." },
+      { property: "og:title", content: "Sign in — GharLog" },
+      {
+        property: "og:description",
+        content: "Sign in to your encrypted GharLog home asset vault.",
+      },
+      { property: "og:url", content: "https://smart-asset-locker.lovable.app/auth" },
+      { name: "robots", content: "noindex" },
     ],
+    links: [{ rel: "canonical", href: "https://smart-asset-locker.lovable.app/auth" }],
   }),
   component: AuthPage,
 });
@@ -119,7 +127,7 @@ function AuthPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-surface-0 px-4">
+    <main className="flex min-h-screen items-center justify-center bg-surface-0 px-4">
       <div className="w-full max-w-sm rounded-2xl border border-border bg-surface-2 p-6 shadow-sm">
         <div className="mb-5 flex items-center gap-2.5">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand text-brand-foreground">
