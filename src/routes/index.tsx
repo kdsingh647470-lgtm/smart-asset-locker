@@ -2443,6 +2443,7 @@ function PlanCard({
   features,
   cta,
   recommended,
+  onCta,
 }: {
   name: string;
   price: string;
@@ -2450,6 +2451,7 @@ function PlanCard({
   features: { ok: boolean; label: string }[];
   cta: string;
   recommended?: boolean;
+  onCta?: () => void;
 }) {
   return (
     <div
@@ -2479,11 +2481,13 @@ function PlanCard({
       </ul>
       <button
         type="button"
+        onClick={onCta}
+        disabled={!onCta}
         className={`mt-2.5 w-full rounded-lg border px-2 py-2 text-[12px] font-medium ${
           recommended
             ? "border-brand bg-brand text-brand-foreground"
             : "border-border bg-surface-1 text-text-primary"
-        }`}
+        } ${!onCta ? "opacity-70 cursor-default" : "hover:opacity-90"}`}
       >
         {cta}
       </button>
