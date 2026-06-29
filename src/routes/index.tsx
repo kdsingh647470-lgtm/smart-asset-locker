@@ -2243,6 +2243,22 @@ function renderMd(text: string) {
 
 /* ------------------------- INSURANCE ------------------------- */
 function Insurance({ setTab }: { setTab: (t: TabKey) => void }) {
+  const planQ = useQuery({ queryKey: ["my-plan"], queryFn: () => getMyPlan() });
+  const qc = useQueryClient();
+  const [promoOpen, setPromoOpen] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoMsg, setPromoMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const redeem = useMutation({
+    mutationFn: (code: string) => redeemProCode({ data: { code } }),
+    onSuccess: (res) => {
+      setPromoMsg({ ok: res.ok, text: res.message });
+      if (res.ok) {
+        qc.invalidateQueries({ queryKey: ["my-plan"] });
+        setTimeout(() => setPromoOpen(false), 1200);
+      }
+    },
+  });
+  const isPro = planQ.data?.plan === "pro";
   const itemsQ = useQuery({ queryKey: ["items"], queryFn: listItems });
   const isDemo = (itemsQ.data ?? []).length === 0;
   return (
