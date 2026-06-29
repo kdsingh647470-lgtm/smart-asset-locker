@@ -26,6 +26,7 @@ import {
   type Recurrence,
 } from "@/lib/maintenance-api";
 import { buildReminders } from "@/lib/reminders";
+import { getMyPlan, redeemProCode } from "@/lib/plan.functions";
 import {
   HomeIcon,
   Box,
