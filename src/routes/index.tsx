@@ -1721,7 +1721,7 @@ function Scan() {
           {preview ? (
             <img
               src={preview}
-              alt="Document"
+              alt="Preview of uploaded document"
               className="mb-3 max-h-48 w-full rounded-lg object-contain bg-surface-1"
             />
           ) : file ? (

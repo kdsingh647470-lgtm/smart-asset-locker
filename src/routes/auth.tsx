@@ -126,7 +126,7 @@ function AuthPage() {
             <HomeIcon className="h-5 w-5" />
           </div>
           <div>
-            <h1 className="text-[17px] font-medium tracking-tight">GharLog</h1>
+            <h1 className="text-[17px] font-medium tracking-tight">GharLog — India's Digital Home Asset Manager</h1>
             <p className="text-[11px] text-text-muted">India's Digital Home Asset Manager</p>
           </div>
         </div>

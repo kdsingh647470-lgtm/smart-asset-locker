@@ -125,7 +125,7 @@ function OnboardingPage() {
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent-blue">
               <HomeIcon className="h-5 w-5" strokeWidth={2.2} />
             </div>
-            <div className="text-[17px] font-medium tracking-tight">GharLog</div>
+            <h1 className="text-[17px] font-medium tracking-tight">GharLog</h1>
           </div>
           <button
             type="button"
@@ -170,6 +170,7 @@ function OnboardingPage() {
               <button
                 type="button"
                 onClick={prev}
+                aria-label="Previous slide"
                 className="flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-surface-2 text-text-secondary"
               >
                 <ChevronLeft className="h-5 w-5" />
