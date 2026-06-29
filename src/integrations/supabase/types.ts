@@ -189,6 +189,33 @@ export type Database = {
           },
         ]
       }
+      user_plans: {
+        Row: {
+          activated_at: string | null
+          created_at: string
+          plan: string
+          promo_code: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activated_at?: string | null
+          created_at?: string
+          plan?: string
+          promo_code?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activated_at?: string | null
+          created_at?: string
+          plan?: string
+          promo_code?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
