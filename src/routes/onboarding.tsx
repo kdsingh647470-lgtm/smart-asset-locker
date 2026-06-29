@@ -18,6 +18,25 @@ import {
 import { markOnboardingSeen } from "@/lib/onboarding-storage";
 
 export const Route = createFileRoute("/onboarding")({
+  head: () => ({
+    meta: [
+      { title: "Get started — GharLog" },
+      {
+        name: "description",
+        content:
+          "Quick tour of GharLog — how to scan, store and track every home asset, warranty and document.",
+      },
+      { property: "og:title", content: "Get started with GharLog" },
+      {
+        property: "og:description",
+        content:
+          "Quick tour of GharLog — how to scan, store and track every home asset, warranty and document.",
+      },
+      { property: "og:url", content: "https://smart-asset-locker.lovable.app/onboarding" },
+      { name: "robots", content: "noindex" },
+    ],
+    links: [{ rel: "canonical", href: "https://smart-asset-locker.lovable.app/onboarding" }],
+  }),
   component: OnboardingPage,
 });
 
