@@ -26,6 +26,7 @@ import {
   type Recurrence,
 } from "@/lib/maintenance-api";
 import { buildReminders } from "@/lib/reminders";
+import { getMyPlan, redeemProCode } from "@/lib/plan.functions";
 import {
   HomeIcon,
   Box,
@@ -2243,6 +2244,22 @@ function renderMd(text: string) {
 
 /* ------------------------- INSURANCE ------------------------- */
 function Insurance({ setTab }: { setTab: (t: TabKey) => void }) {
+  const planQ = useQuery({ queryKey: ["my-plan"], queryFn: () => getMyPlan() });
+  const qc = useQueryClient();
+  const [promoOpen, setPromoOpen] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoMsg, setPromoMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const redeem = useMutation({
+    mutationFn: (code: string) => redeemProCode({ data: { code } }),
+    onSuccess: (res) => {
+      setPromoMsg({ ok: res.ok, text: res.message });
+      if (res.ok) {
+        qc.invalidateQueries({ queryKey: ["my-plan"] });
+        setTimeout(() => setPromoOpen(false), 1200);
+      }
+    },
+  });
+  const isPro = planQ.data?.plan === "pro";
   const itemsQ = useQuery({ queryKey: ["items"], queryFn: listItems });
   const isDemo = (itemsQ.data ?? []).length === 0;
   return (
@@ -2304,7 +2321,7 @@ function Insurance({ setTab }: { setTab: (t: TabKey) => void }) {
             { ok: false, label: "AI scanner" },
             { ok: false, label: "Insurance reports" },
           ]}
-          cta="Current plan"
+          cta={isPro ? "Downgraded" : "Current plan"}
         />
         <PlanCard
           name="Pro"
@@ -2320,7 +2337,8 @@ function Insurance({ setTab }: { setTab: (t: TabKey) => void }) {
             { ok: true, label: "QR labels" },
             { ok: true, label: "AI assistant" },
           ]}
-          cta="Upgrade to Pro"
+          cta={isPro ? "Active ✓" : "Upgrade to Pro"}
+          onCta={isPro ? undefined : () => { setPromoMsg(null); setPromoCode(""); setPromoOpen(true); }}
         />
         <PlanCard
           name="Business"
@@ -2337,6 +2355,61 @@ function Insurance({ setTab }: { setTab: (t: TabKey) => void }) {
           cta="For offices"
         />
       </div>
+
+      {promoOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center"
+          onClick={() => setPromoOpen(false)}
+        >
+          <div
+            className="w-full max-w-sm rounded-t-2xl bg-surface-1 p-4 sm:rounded-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-1 flex items-center gap-2">
+              <Crown className="h-4 w-4 text-[oklch(0.78_0.14_85)]" />
+              <h3 className="text-[15px] font-medium">Unlock Pro</h3>
+            </div>
+            <p className="mb-3 text-[12px] text-text-muted">
+              Enter the promo code you received to activate Pro features on this account.
+            </p>
+            <input
+              autoFocus
+              value={promoCode}
+              onChange={(e) => setPromoCode(e.target.value)}
+              placeholder="Promo code"
+              className="w-full rounded-xl border border-border bg-surface-2 px-3 py-2.5 text-[13px] uppercase tracking-wide outline-none focus:border-accent-blue"
+            />
+            {promoMsg && (
+              <div
+                className={`mt-2 rounded-md px-2.5 py-2 text-[11px] ${
+                  promoMsg.ok
+                    ? "bg-[oklch(0.95_0.05_150)] text-[oklch(0.38_0.13_150)]"
+                    : "bg-[oklch(0.96_0.04_25)] text-[oklch(0.42_0.15_25)]"
+                }`}
+              >
+                {promoMsg.text}
+              </div>
+            )}
+            <div className="mt-3 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-[12px]"
+                onClick={() => setPromoOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!promoCode.trim() || redeem.isPending}
+                onClick={() => redeem.mutate(promoCode.trim())}
+                className="rounded-lg bg-brand px-3 py-2 text-[12px] font-medium text-brand-foreground disabled:opacity-60"
+              >
+                {redeem.isPending ? "Checking…" : "Redeem"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
@@ -2370,6 +2443,7 @@ function PlanCard({
   features,
   cta,
   recommended,
+  onCta,
 }: {
   name: string;
   price: string;
@@ -2377,6 +2451,7 @@ function PlanCard({
   features: { ok: boolean; label: string }[];
   cta: string;
   recommended?: boolean;
+  onCta?: () => void;
 }) {
   return (
     <div
@@ -2406,11 +2481,13 @@ function PlanCard({
       </ul>
       <button
         type="button"
+        onClick={onCta}
+        disabled={!onCta}
         className={`mt-2.5 w-full rounded-lg border px-2 py-2 text-[12px] font-medium ${
           recommended
             ? "border-brand bg-brand text-brand-foreground"
             : "border-border bg-surface-1 text-text-primary"
-        }`}
+        } ${!onCta ? "opacity-70 cursor-default" : "hover:opacity-90"}`}
       >
         {cta}
       </button>
