@@ -27,6 +27,8 @@ import {
 } from "@/lib/maintenance-api";
 import { buildReminders } from "@/lib/reminders";
 import { getMyPlan, redeemProCode } from "@/lib/plan.functions";
+import { listMyNotifications, markAllRead, type AppNotification } from "@/lib/notifications.functions";
+import { toast } from "sonner";
 import {
   HomeIcon,
   Box,
@@ -138,13 +140,37 @@ function GharLogApp() {
   }
   if (!session) return <Navigate to="/auth" />;
 
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifQ = useQuery({
+    queryKey: ["notifications"],
+    queryFn: () => listMyNotifications(),
+    enabled: !!session,
+    refetchInterval: 60_000,
+  });
+  const unread = (notifQ.data ?? []).filter((n) => !n.read_at).length;
+
+  // Foreground push: refresh panel + toast when an FCM message lands while open.
+  useEffect(() => {
+    if (!session) return;
+    let off = () => {};
+    (async () => {
+      const { listenForegroundMessages } = await import("@/lib/push");
+      off = listenForegroundMessages((p) => {
+        toast(p.title ?? "Reminder", { description: p.body });
+        notifQ.refetch();
+      });
+    })();
+    return () => off();
+  }, [session]);
+
   return (
     <div className="min-h-screen bg-surface-0 text-text-primary">
       <div className="mx-auto flex min-h-screen max-w-[480px] flex-col bg-surface-0 shadow-sm md:my-4 md:min-h-[calc(100vh-2rem)] md:rounded-2xl md:overflow-hidden">
         <Header
           onHome={() => setTab("dash")}
           onPro={() => setTab("ins")}
-          onNotify={() => setTab("dash")}
+          onNotify={() => setNotifOpen(true)}
+          unread={unread}
         />
         <TabBar tab={tab} setTab={setTab} />
         <main className="flex-1 px-4 pb-24 pt-4">
@@ -155,13 +181,34 @@ function GharLogApp() {
           {tab === "ai" && <AIAssistant setTab={setTab} />}
           {tab === "ins" && <Insurance setTab={setTab} />}
         </main>
-
+        {notifOpen && (
+          <NotificationsSheet
+            notifs={notifQ.data ?? []}
+            onClose={() => setNotifOpen(false)}
+            onRefresh={() => notifQ.refetch()}
+            onJump={(tab) => {
+              setNotifOpen(false);
+              setTab(tab);
+            }}
+          />
+        )}
       </div>
     </div>
   );
 }
 
-function Header({ onHome, onPro, onNotify }: { onHome: () => void; onPro: () => void; onNotify: () => void }) {
+
+function Header({
+  onHome,
+  onPro,
+  onNotify,
+  unread,
+}: {
+  onHome: () => void;
+  onPro: () => void;
+  onNotify: () => void;
+  unread: number;
+}) {
   const planQ = useQuery({ queryKey: ["my-plan"], queryFn: () => getMyPlan() });
   const isPro = planQ.data?.plan === "pro";
   return (
@@ -193,11 +240,16 @@ function Header({ onHome, onPro, onNotify }: { onHome: () => void; onPro: () => 
         </button>
         <button
           type="button"
-          aria-label="Notifications"
+          aria-label={unread > 0 ? `Notifications, ${unread} unread` : "Notifications"}
           onClick={onNotify}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 transition active:scale-95 hover:bg-white/20"
+          className="relative flex h-8 w-8 items-center justify-center rounded-full bg-white/10 transition active:scale-95 hover:bg-white/20"
         >
           <Bell className="h-4 w-4" />
+          {unread > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-semibold leading-none text-white">
+              {unread > 9 ? "9+" : unread}
+            </span>
+          )}
         </button>
         <button
           type="button"
@@ -212,6 +264,140 @@ function Header({ onHome, onPro, onNotify }: { onHome: () => void; onPro: () => 
     </header>
   );
 }
+
+function NotificationsSheet({
+  notifs,
+  onClose,
+  onRefresh,
+  onJump,
+}: {
+  notifs: AppNotification[];
+  onClose: () => void;
+  onRefresh: () => void;
+  onJump: (tab: TabKey) => void;
+}) {
+  const qc = useQueryClient();
+  const [busy, setBusy] = useState(false);
+  const [pushState, setPushState] = useState<"idle" | "asking" | "on" | "denied" | "unsupported">(
+    typeof Notification !== "undefined" && Notification.permission === "granted" ? "on" : "idle",
+  );
+
+  useEffect(() => {
+    // Mark all as read when the sheet opens.
+    (async () => {
+      try {
+        await markAllRead();
+        qc.invalidateQueries({ queryKey: ["notifications"] });
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, [qc]);
+
+  async function enablePush() {
+    setBusy(true);
+    setPushState("asking");
+    try {
+      const { enablePushNotifications, isPushConfigured } = await import("@/lib/push");
+      if (!isPushConfigured()) {
+        toast.error("Push not configured yet", {
+          description: "Firebase keys are missing. Owner needs to add them in Project Settings → Secrets.",
+        });
+        setPushState("unsupported");
+        return;
+      }
+      const res = await enablePushNotifications();
+      if (res.status === "ok") {
+        setPushState("on");
+        toast.success("Notifications on", { description: "We'll alert you 30, 7 and 1 days before each renewal." });
+      } else if (res.status === "denied") {
+        setPushState("denied");
+        toast.error("Permission denied", { description: "Enable notifications in your browser settings to receive alerts." });
+      } else {
+        setPushState("unsupported");
+        toast.error("Push unavailable", { description: res.reason });
+      }
+    } catch (e) {
+      setPushState("unsupported");
+      toast.error("Couldn't enable push", { description: (e as Error).message });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 px-2 pb-2" onClick={onClose}>
+      <div
+        className="w-full max-w-[480px] rounded-t-2xl bg-surface-1 shadow-xl max-h-[80vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <div>
+            <h3 className="text-[15px] font-medium">Notifications</h3>
+            <p className="text-[11px] text-text-muted">{notifs.length} recent · push {pushState === "on" ? "on" : "off"}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="rounded-full bg-surface-2 px-3 py-1 text-[12px]"
+          >
+            Done
+          </button>
+        </div>
+
+        {pushState !== "on" && (
+          <div className="border-b border-border bg-accent-blue/5 px-4 py-3">
+            <div className="text-[12.5px] font-medium">Get reminders on your phone</div>
+            <p className="text-[11px] text-text-muted mt-0.5">
+              We'll ping you 30, 7 and 1 days before each warranty or insurance renewal — even when GharLog is closed.
+            </p>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={enablePush}
+              className="mt-2 rounded-full bg-brand px-3 py-1.5 text-[12px] font-medium text-brand-foreground disabled:opacity-60"
+            >
+              {busy ? "Asking…" : "Turn on push"}
+            </button>
+          </div>
+        )}
+
+        <div className="flex-1 overflow-y-auto">
+          {notifs.length === 0 ? (
+            <div className="p-6 text-center text-[12px] text-text-muted">
+              You're all caught up. Reminders will appear here as renewals approach.
+            </div>
+          ) : (
+            <ul className="divide-y divide-border">
+              {notifs.map((n) => (
+                <li key={n.id}>
+                  <button
+                    type="button"
+                    onClick={() => onJump("inv")}
+                    className="block w-full px-4 py-3 text-left transition hover:bg-surface-2"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="text-[13px] font-medium">{n.title}</div>
+                      {!n.read_at && <span className="h-2 w-2 shrink-0 rounded-full bg-red-500" />}
+                    </div>
+                    <div className="text-[11.5px] text-text-muted mt-0.5">{n.body}</div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div className="border-t border-border px-4 py-2 text-right">
+          <button type="button" onClick={onRefresh} className="text-[11px] text-text-muted">
+            Refresh
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 function TabBar({ tab, setTab }: { tab: TabKey; setTab: (t: TabKey) => void }) {
   return (
