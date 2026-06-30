@@ -157,7 +157,7 @@ function GharLogApp() {
   );
 }
 
-function Header({ onHome, onPro }: { onHome: () => void; onPro: () => void }) {
+function Header({ onHome, onPro, onNotify }: { onHome: () => void; onPro: () => void; onNotify: () => void }) {
   const planQ = useQuery({ queryKey: ["my-plan"], queryFn: () => getMyPlan() });
   const isPro = planQ.data?.plan === "pro";
   return (
