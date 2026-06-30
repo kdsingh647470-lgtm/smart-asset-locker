@@ -182,17 +182,16 @@ function Header({ onHome, onPro }: { onHome: () => void; onPro: () => void }) {
           onClick={onPro}
           aria-label={isPro ? "Pro plan active" : "Upgrade to Pro"}
           title={isPro ? "Pro active" : "Upgrade to Pro"}
-          className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium text-white transition active:scale-95 ${
-            isPro ? "bg-[oklch(0.62_0.13_290)]" : "bg-white/15 hover:bg-white/25"
-          }`}
+          className="flex items-center gap-1 rounded-full bg-[oklch(0.62_0.13_290)] px-2.5 py-0.5 text-[11px] font-medium text-white transition active:scale-95 hover:opacity-90"
         >
           <Crown className="h-3 w-3" />
-          {isPro ? "Pro" : "Upgrade"}
+          Pro
         </button>
         <button
           type="button"
           aria-label="Notifications"
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10"
+          onClick={onNotify}
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 transition active:scale-95 hover:bg-white/20"
         >
           <Bell className="h-4 w-4" />
         </button>
