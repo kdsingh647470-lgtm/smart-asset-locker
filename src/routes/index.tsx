@@ -141,7 +141,7 @@ function GharLogApp() {
   return (
     <div className="min-h-screen bg-surface-0 text-text-primary">
       <div className="mx-auto flex min-h-screen max-w-[480px] flex-col bg-surface-0 shadow-sm md:my-4 md:min-h-[calc(100vh-2rem)] md:rounded-2xl md:overflow-hidden">
-        <Header onHome={() => setTab("dash")} />
+        <Header onHome={() => setTab("dash")} onPro={() => setTab("ins")} />
         <TabBar tab={tab} setTab={setTab} />
         <main className="flex-1 px-4 pb-24 pt-4">
           {tab === "dash" && <Dashboard setTab={setTab} />}
