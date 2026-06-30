@@ -141,7 +141,7 @@ function GharLogApp() {
   return (
     <div className="min-h-screen bg-surface-0 text-text-primary">
       <div className="mx-auto flex min-h-screen max-w-[480px] flex-col bg-surface-0 shadow-sm md:my-4 md:min-h-[calc(100vh-2rem)] md:rounded-2xl md:overflow-hidden">
-        <Header onHome={() => setTab("dash")} />
+        <Header onHome={() => setTab("dash")} onPro={() => setTab("ins")} />
         <TabBar tab={tab} setTab={setTab} />
         <main className="flex-1 px-4 pb-24 pt-4">
           {tab === "dash" && <Dashboard setTab={setTab} />}
@@ -157,7 +157,9 @@ function GharLogApp() {
   );
 }
 
-function Header({ onHome }: { onHome: () => void }) {
+function Header({ onHome, onPro }: { onHome: () => void; onPro: () => void }) {
+  const planQ = useQuery({ queryKey: ["my-plan"], queryFn: () => getMyPlan() });
+  const isPro = planQ.data?.plan === "pro";
   return (
     <header className="flex items-center justify-between bg-brand px-4 py-3 text-brand-foreground">
       <button
@@ -175,10 +177,18 @@ function Header({ onHome }: { onHome: () => void }) {
         </div>
       </button>
       <div className="flex items-center gap-2">
-        <span className="flex items-center gap-1 rounded-full bg-[oklch(0.62_0.13_290)] px-2.5 py-0.5 text-[11px] font-medium text-white">
+        <button
+          type="button"
+          onClick={onPro}
+          aria-label={isPro ? "Pro plan active" : "Upgrade to Pro"}
+          title={isPro ? "Pro active" : "Upgrade to Pro"}
+          className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium text-white transition active:scale-95 ${
+            isPro ? "bg-[oklch(0.62_0.13_290)]" : "bg-white/15 hover:bg-white/25"
+          }`}
+        >
           <Crown className="h-3 w-3" />
-          Pro
-        </span>
+          {isPro ? "Pro" : "Upgrade"}
+        </button>
         <button
           type="button"
           aria-label="Notifications"
