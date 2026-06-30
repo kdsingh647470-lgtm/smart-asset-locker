@@ -138,13 +138,37 @@ function GharLogApp() {
   }
   if (!session) return <Navigate to="/auth" />;
 
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifQ = useQuery({
+    queryKey: ["notifications"],
+    queryFn: () => listMyNotifications(),
+    enabled: !!session,
+    refetchInterval: 60_000,
+  });
+  const unread = (notifQ.data ?? []).filter((n) => !n.read_at).length;
+
+  // Foreground push: refresh panel + toast when an FCM message lands while open.
+  useEffect(() => {
+    if (!session) return;
+    let off = () => {};
+    (async () => {
+      const { listenForegroundMessages } = await import("@/lib/push");
+      off = listenForegroundMessages((p) => {
+        toast(p.title ?? "Reminder", { description: p.body });
+        notifQ.refetch();
+      });
+    })();
+    return () => off();
+  }, [session]);
+
   return (
     <div className="min-h-screen bg-surface-0 text-text-primary">
       <div className="mx-auto flex min-h-screen max-w-[480px] flex-col bg-surface-0 shadow-sm md:my-4 md:min-h-[calc(100vh-2rem)] md:rounded-2xl md:overflow-hidden">
         <Header
           onHome={() => setTab("dash")}
           onPro={() => setTab("ins")}
-          onNotify={() => setTab("dash")}
+          onNotify={() => setNotifOpen(true)}
+          unread={unread}
         />
         <TabBar tab={tab} setTab={setTab} />
         <main className="flex-1 px-4 pb-24 pt-4">
@@ -155,11 +179,22 @@ function GharLogApp() {
           {tab === "ai" && <AIAssistant setTab={setTab} />}
           {tab === "ins" && <Insurance setTab={setTab} />}
         </main>
-
+        {notifOpen && (
+          <NotificationsSheet
+            notifs={notifQ.data ?? []}
+            onClose={() => setNotifOpen(false)}
+            onRefresh={() => notifQ.refetch()}
+            onJump={(tab) => {
+              setNotifOpen(false);
+              setTab(tab);
+            }}
+          />
+        )}
       </div>
     </div>
   );
 }
+
 
 function Header({ onHome, onPro, onNotify }: { onHome: () => void; onPro: () => void; onNotify: () => void }) {
   const planQ = useQuery({ queryKey: ["my-plan"], queryFn: () => getMyPlan() });
