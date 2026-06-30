@@ -141,7 +141,11 @@ function GharLogApp() {
   return (
     <div className="min-h-screen bg-surface-0 text-text-primary">
       <div className="mx-auto flex min-h-screen max-w-[480px] flex-col bg-surface-0 shadow-sm md:my-4 md:min-h-[calc(100vh-2rem)] md:rounded-2xl md:overflow-hidden">
-        <Header onHome={() => setTab("dash")} onPro={() => setTab("ins")} />
+        <Header
+          onHome={() => setTab("dash")}
+          onPro={() => setTab("ins")}
+          onNotify={() => setTab("dash")}
+        />
         <TabBar tab={tab} setTab={setTab} />
         <main className="flex-1 px-4 pb-24 pt-4">
           {tab === "dash" && <Dashboard setTab={setTab} />}
@@ -157,7 +161,7 @@ function GharLogApp() {
   );
 }
 
-function Header({ onHome, onPro }: { onHome: () => void; onPro: () => void }) {
+function Header({ onHome, onPro, onNotify }: { onHome: () => void; onPro: () => void; onNotify: () => void }) {
   const planQ = useQuery({ queryKey: ["my-plan"], queryFn: () => getMyPlan() });
   const isPro = planQ.data?.plan === "pro";
   return (
@@ -182,17 +186,16 @@ function Header({ onHome, onPro }: { onHome: () => void; onPro: () => void }) {
           onClick={onPro}
           aria-label={isPro ? "Pro plan active" : "Upgrade to Pro"}
           title={isPro ? "Pro active" : "Upgrade to Pro"}
-          className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-medium text-white transition active:scale-95 ${
-            isPro ? "bg-[oklch(0.62_0.13_290)]" : "bg-white/15 hover:bg-white/25"
-          }`}
+          className="flex items-center gap-1 rounded-full bg-[oklch(0.62_0.13_290)] px-2.5 py-0.5 text-[11px] font-medium text-white transition active:scale-95 hover:opacity-90"
         >
           <Crown className="h-3 w-3" />
-          {isPro ? "Pro" : "Upgrade"}
+          Pro
         </button>
         <button
           type="button"
           aria-label="Notifications"
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10"
+          onClick={onNotify}
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 transition active:scale-95 hover:bg-white/20"
         >
           <Bell className="h-4 w-4" />
         </button>
