@@ -212,6 +212,20 @@ function Header({
 }) {
   const planQ = useQuery({ queryKey: ["my-plan"], queryFn: () => getMyPlan() });
   const isPro = planQ.data?.plan === "pro";
+  const { session } = useAuth();
+  const [profileOpen, setProfileOpen] = useState(false);
+  const user = session?.user;
+  const meta = (user?.user_metadata ?? {}) as { full_name?: string; name?: string; avatar_url?: string; picture?: string };
+  const displayName = meta.full_name ?? meta.name ?? user?.email?.split("@")[0] ?? "You";
+  const avatarUrl = meta.avatar_url ?? meta.picture;
+  const initials = displayName
+    .split(/\s+/)
+    .map((s) => s[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
   return (
     <header className="flex items-center justify-between bg-brand px-4 py-3 text-brand-foreground">
       <button
@@ -254,17 +268,113 @@ function Header({
         </button>
         <button
           type="button"
-          aria-label="Sign out"
-          title="Sign out"
-          onClick={() => supabase.auth.signOut()}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10"
+          aria-label="Open profile"
+          title={displayName}
+          onClick={() => setProfileOpen(true)}
+          className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-white/15 text-[11px] font-semibold ring-1 ring-white/20 transition active:scale-95 hover:bg-white/25"
         >
-          <LogOut className="h-4 w-4" />
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+          ) : (
+            <span>{initials || "U"}</span>
+          )}
         </button>
       </div>
+      {profileOpen && (
+        <ProfileSheet
+          name={displayName}
+          email={user?.email ?? ""}
+          avatarUrl={avatarUrl}
+          initials={initials}
+          isPro={isPro}
+          provider={(user?.app_metadata as { provider?: string } | undefined)?.provider}
+          createdAt={user?.created_at}
+          onClose={() => setProfileOpen(false)}
+        />
+      )}
     </header>
   );
 }
+
+function ProfileSheet({
+  name,
+  email,
+  avatarUrl,
+  initials,
+  isPro,
+  provider,
+  createdAt,
+  onClose,
+}: {
+  name: string;
+  email: string;
+  avatarUrl?: string;
+  initials: string;
+  isPro: boolean;
+  provider?: string;
+  createdAt?: string;
+  onClose: () => void;
+}) {
+  const joined = createdAt ? new Date(createdAt).toLocaleDateString("en-IN", { year: "numeric", month: "short", day: "numeric" }) : null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50" onClick={onClose}>
+      <div
+        className="w-full max-w-[480px] rounded-t-2xl bg-surface-0 p-5 text-text-primary shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-4 flex items-center gap-3">
+          <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-brand/10 text-lg font-semibold text-brand">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+            ) : (
+              <span>{initials || "U"}</span>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-base font-semibold">{name}</div>
+            <div className="truncate text-xs text-text-muted">{email}</div>
+          </div>
+          {isPro && (
+            <span className="flex items-center gap-1 rounded-full bg-[oklch(0.62_0.13_290)] px-2 py-0.5 text-[10px] font-medium text-white">
+              <Crown className="h-3 w-3" /> Pro
+            </span>
+          )}
+        </div>
+
+        <dl className="space-y-2 rounded-xl border border-border bg-surface-1 p-3 text-xs">
+          <div className="flex justify-between"><dt className="text-text-muted">Plan</dt><dd className="font-medium">{isPro ? "Pro" : "Free"}</dd></div>
+          {provider && (
+            <div className="flex justify-between"><dt className="text-text-muted">Signed in via</dt><dd className="font-medium capitalize">{provider}</dd></div>
+          )}
+          {joined && (
+            <div className="flex justify-between"><dt className="text-text-muted">Member since</dt><dd className="font-medium">{joined}</dd></div>
+          )}
+        </dl>
+
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 rounded-lg border border-border bg-surface-1 py-2 text-sm font-medium"
+          >
+            Close
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              await supabase.auth.signOut();
+              onClose();
+            }}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-brand py-2 text-sm font-medium text-brand-foreground"
+          >
+            <LogOut className="h-4 w-4" /> Sign out
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 function NotificationsSheet({
   notifs,
