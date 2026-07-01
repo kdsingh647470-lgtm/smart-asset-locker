@@ -298,14 +298,7 @@ function NotificationsSheet({
     setBusy(true);
     setPushState("asking");
     try {
-      const { enablePushNotifications, isPushConfigured } = await import("@/lib/push");
-      if (!isPushConfigured()) {
-        toast.error("Push not configured yet", {
-          description: "Firebase keys are missing. Owner needs to add them in Project Settings → Secrets.",
-        });
-        setPushState("unsupported");
-        return;
-      }
+      const { enablePushNotifications } = await import("@/lib/push");
       const res = await enablePushNotifications();
       if (res.status === "ok") {
         setPushState("on");
