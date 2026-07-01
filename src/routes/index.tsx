@@ -121,33 +121,22 @@ const TABS: { key: TabKey; label: string; icon: LucideIcon }[] = [
 
 function GharLogApp() {
   const [tab, setTab] = useState<TabKey>("dash");
+  const [notifOpen, setNotifOpen] = useState(false);
   const { session, loading } = useAuth();
   const navigate = useNavigate();
   const itemsQ = useQuery({ queryKey: ["items"], queryFn: listItems, enabled: !!session });
-
-  useEffect(() => {
-    if (!loading && session && !itemsQ.isLoading && (itemsQ.data ?? []).length === 0 && !hasSeenOnboarding()) {
-      navigate({ to: "/onboarding" });
-    }
-  }, [loading, session, itemsQ.isLoading, itemsQ.data, navigate]);
-
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-surface-0 text-sm text-text-muted">
-        Loading…
-      </div>
-    );
-  }
-  if (!session) return <Navigate to="/auth" />;
-
-  const [notifOpen, setNotifOpen] = useState(false);
   const notifQ = useQuery({
     queryKey: ["notifications"],
     queryFn: () => listMyNotifications(),
     enabled: !!session,
     refetchInterval: 60_000,
   });
-  const unread = (notifQ.data ?? []).filter((n) => !n.read_at).length;
+
+  useEffect(() => {
+    if (!loading && session && !itemsQ.isLoading && (itemsQ.data ?? []).length === 0 && !hasSeenOnboarding()) {
+      navigate({ to: "/onboarding" });
+    }
+  }, [loading, session, itemsQ.isLoading, itemsQ.data, navigate]);
 
   // Foreground push: refresh panel + toast when an FCM message lands while open.
   useEffect(() => {
@@ -162,6 +151,18 @@ function GharLogApp() {
     })();
     return () => off();
   }, [session]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-surface-0 text-sm text-text-muted">
+        Loading…
+      </div>
+    );
+  }
+  if (!session) return <Navigate to="/auth" />;
+
+  const unread = (notifQ.data ?? []).filter((n) => !n.read_at).length;
+
 
   return (
     <div className="min-h-screen bg-surface-0 text-text-primary">
