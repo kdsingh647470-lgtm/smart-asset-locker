@@ -1,26 +1,52 @@
 // Firebase Cloud Messaging client helper for GharLog web push.
-// All values prefixed VITE_ are safe to expose to the browser.
-import { initializeApp, getApps } from "firebase/app";
+// Firebase Web config (including apiKey) is fetched from /api/public/firebase-config
+// at runtime, so no VITE_ envs are required and the apiKey stays server-managed.
+import { initializeApp, getApps, type FirebaseApp } from "firebase/app";
 import { getMessaging, getToken, onMessage, isSupported } from "firebase/messaging";
 import { saveDeviceToken } from "./notifications.functions";
 
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+type FirebaseWebConfig = {
+  apiKey: string;
+  authDomain: string;
+  projectId: string;
+  storageBucket: string;
+  messagingSenderId: string;
+  appId: string;
+  vapidKey: string;
 };
 
-const VAPID_KEY = import.meta.env.VITE_FCM_VAPID_PUBLIC_KEY as string | undefined;
+let cachedConfig: FirebaseWebConfig | null = null;
+let cachedApp: FirebaseApp | null = null;
 
-export function isPushConfigured(): boolean {
-  return Boolean(firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.messagingSenderId && firebaseConfig.appId && VAPID_KEY);
+async function loadConfig(): Promise<FirebaseWebConfig | null> {
+  if (cachedConfig) return cachedConfig;
+  try {
+    const res = await fetch("/api/public/firebase-config", { credentials: "omit" });
+    if (!res.ok) return null;
+    const json = (await res.json()) as FirebaseWebConfig;
+    if (!json.apiKey || !json.projectId || !json.messagingSenderId || !json.appId || !json.vapidKey) {
+      return null;
+    }
+    cachedConfig = json;
+    return json;
+  } catch {
+    return null;
+  }
 }
 
-function ensureApp() {
-  if (!isPushConfigured()) throw new Error("Push not configured");
-  return getApps().length ? getApps()[0]! : initializeApp(firebaseConfig);
+function ensureApp(cfg: FirebaseWebConfig): FirebaseApp {
+  if (cachedApp) return cachedApp;
+  cachedApp = getApps().length
+    ? getApps()[0]!
+    : initializeApp({
+        apiKey: cfg.apiKey,
+        authDomain: cfg.authDomain,
+        projectId: cfg.projectId,
+        storageBucket: cfg.storageBucket,
+        messagingSenderId: cfg.messagingSenderId,
+        appId: cfg.appId,
+      });
+  return cachedApp;
 }
 
 export type PushResult =
@@ -32,7 +58,10 @@ export async function enablePushNotifications(): Promise<PushResult> {
   if (typeof window === "undefined") return { status: "unsupported", reason: "no window" };
   if (!("serviceWorker" in navigator)) return { status: "unsupported", reason: "no service worker" };
   if (!("Notification" in window)) return { status: "unsupported", reason: "no Notification API" };
-  if (!isPushConfigured()) return { status: "unsupported", reason: "Push not configured yet" };
+
+  const cfg = await loadConfig();
+  if (!cfg) return { status: "unsupported", reason: "Push not configured yet" };
+
   const supported = await isSupported().catch(() => false);
   if (!supported) return { status: "unsupported", reason: "browser unsupported" };
 
@@ -42,9 +71,12 @@ export async function enablePushNotifications(): Promise<PushResult> {
   const reg = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
   await navigator.serviceWorker.ready;
 
-  const app = ensureApp();
+  const app = ensureApp(cfg);
   const messaging = getMessaging(app);
-  const token = await getToken(messaging, { vapidKey: VAPID_KEY!, serviceWorkerRegistration: reg });
+  const token = await getToken(messaging, {
+    vapidKey: cfg.vapidKey,
+    serviceWorkerRegistration: reg,
+  });
   if (!token) return { status: "unsupported", reason: "no token returned" };
 
   await saveDeviceToken({
@@ -58,18 +90,29 @@ export async function enablePushNotifications(): Promise<PushResult> {
   return { status: "ok", token };
 }
 
-export function listenForegroundMessages(handler: (payload: { title?: string; body?: string }) => void) {
-  if (!isPushConfigured()) return () => {};
-  try {
-    const app = ensureApp();
-    const messaging = getMessaging(app);
-    return onMessage(messaging, (payload) => {
-      handler({
-        title: payload.notification?.title,
-        body: payload.notification?.body,
+export function listenForegroundMessages(
+  handler: (payload: { title?: string; body?: string }) => void,
+) {
+  let unsub: (() => void) | null = null;
+  let cancelled = false;
+  (async () => {
+    const cfg = await loadConfig();
+    if (!cfg || cancelled) return;
+    try {
+      const app = ensureApp(cfg);
+      const messaging = getMessaging(app);
+      unsub = onMessage(messaging, (payload) => {
+        handler({
+          title: payload.notification?.title,
+          body: payload.notification?.body,
+        });
       });
-    });
-  } catch {
-    return () => {};
-  }
+    } catch {
+      // no-op
+    }
+  })();
+  return () => {
+    cancelled = true;
+    if (unsub) unsub();
+  };
 }

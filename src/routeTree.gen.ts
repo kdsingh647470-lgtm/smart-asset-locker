@@ -17,6 +17,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiScanInvoiceRouteImport } from './routes/api/scan-invoice'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiPublicSendDueRemindersRouteImport } from './routes/api/public/send-due-reminders'
+import { Route as ApiPublicFirebaseConfigRouteImport } from './routes/api/public/firebase-config'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
@@ -60,6 +61,11 @@ const ApiPublicSendDueRemindersRoute =
     path: '/api/public/send-due-reminders',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicFirebaseConfigRoute = ApiPublicFirebaseConfigRouteImport.update({
+  id: '/api/public/firebase-config',
+  path: '/api/public/firebase-config',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -69,6 +75,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
   '/api/scan-invoice': typeof ApiScanInvoiceRoute
+  '/api/public/firebase-config': typeof ApiPublicFirebaseConfigRoute
   '/api/public/send-due-reminders': typeof ApiPublicSendDueRemindersRoute
 }
 export interface FileRoutesByTo {
@@ -79,6 +86,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
   '/api/scan-invoice': typeof ApiScanInvoiceRoute
+  '/api/public/firebase-config': typeof ApiPublicFirebaseConfigRoute
   '/api/public/send-due-reminders': typeof ApiPublicSendDueRemindersRoute
 }
 export interface FileRoutesById {
@@ -90,6 +98,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
   '/api/scan-invoice': typeof ApiScanInvoiceRoute
+  '/api/public/firebase-config': typeof ApiPublicFirebaseConfigRoute
   '/api/public/send-due-reminders': typeof ApiPublicSendDueRemindersRoute
 }
 export interface FileRouteTypes {
@@ -102,6 +111,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/api/chat'
     | '/api/scan-invoice'
+    | '/api/public/firebase-config'
     | '/api/public/send-due-reminders'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -112,6 +122,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/api/chat'
     | '/api/scan-invoice'
+    | '/api/public/firebase-config'
     | '/api/public/send-due-reminders'
   id:
     | '__root__'
@@ -122,6 +133,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/api/chat'
     | '/api/scan-invoice'
+    | '/api/public/firebase-config'
     | '/api/public/send-due-reminders'
   fileRoutesById: FileRoutesById
 }
@@ -133,6 +145,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiScanInvoiceRoute: typeof ApiScanInvoiceRoute
+  ApiPublicFirebaseConfigRoute: typeof ApiPublicFirebaseConfigRoute
   ApiPublicSendDueRemindersRoute: typeof ApiPublicSendDueRemindersRoute
 }
 
@@ -194,6 +207,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSendDueRemindersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/firebase-config': {
+      id: '/api/public/firebase-config'
+      path: '/api/public/firebase-config'
+      fullPath: '/api/public/firebase-config'
+      preLoaderRoute: typeof ApiPublicFirebaseConfigRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -205,6 +225,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiChatRoute: ApiChatRoute,
   ApiScanInvoiceRoute: ApiScanInvoiceRoute,
+  ApiPublicFirebaseConfigRoute: ApiPublicFirebaseConfigRoute,
   ApiPublicSendDueRemindersRoute: ApiPublicSendDueRemindersRoute,
 }
 export const routeTree = rootRouteImport
