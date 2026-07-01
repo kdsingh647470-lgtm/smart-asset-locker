@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as FirebaseMessagingSwDotjsRouteImport } from './routes/firebase-messaging-sw[.]js'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiScanInvoiceRouteImport } from './routes/api/scan-invoice'
@@ -27,6 +28,12 @@ const OnboardingRoute = OnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FirebaseMessagingSwDotjsRoute =
+  FirebaseMessagingSwDotjsRouteImport.update({
+    id: '/firebase-messaging-sw.js',
+    path: '/firebase-messaging-sw.js',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -57,6 +64,7 @@ const ApiPublicSendDueRemindersRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/firebase-messaging-sw.js': typeof FirebaseMessagingSwDotjsRoute
   '/onboarding': typeof OnboardingRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
@@ -66,6 +74,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/firebase-messaging-sw.js': typeof FirebaseMessagingSwDotjsRoute
   '/onboarding': typeof OnboardingRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
@@ -76,6 +85,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/firebase-messaging-sw.js': typeof FirebaseMessagingSwDotjsRoute
   '/onboarding': typeof OnboardingRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
@@ -87,6 +97,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/firebase-messaging-sw.js'
     | '/onboarding'
     | '/sitemap.xml'
     | '/api/chat'
@@ -96,6 +107,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/firebase-messaging-sw.js'
     | '/onboarding'
     | '/sitemap.xml'
     | '/api/chat'
@@ -105,6 +117,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/auth'
+    | '/firebase-messaging-sw.js'
     | '/onboarding'
     | '/sitemap.xml'
     | '/api/chat'
@@ -115,6 +128,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
+  FirebaseMessagingSwDotjsRoute: typeof FirebaseMessagingSwDotjsRoute
   OnboardingRoute: typeof OnboardingRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ApiChatRoute: typeof ApiChatRoute
@@ -136,6 +150,13 @@ declare module '@tanstack/react-router' {
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/firebase-messaging-sw.js': {
+      id: '/firebase-messaging-sw.js'
+      path: '/firebase-messaging-sw.js'
+      fullPath: '/firebase-messaging-sw.js'
+      preLoaderRoute: typeof FirebaseMessagingSwDotjsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -179,6 +200,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
+  FirebaseMessagingSwDotjsRoute: FirebaseMessagingSwDotjsRoute,
   OnboardingRoute: OnboardingRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiChatRoute: ApiChatRoute,
