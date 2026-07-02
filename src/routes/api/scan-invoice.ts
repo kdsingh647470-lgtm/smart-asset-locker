@@ -261,6 +261,7 @@ export const Route = createFileRoute("/api/scan-invoice")({
         const promptBlock = { type: "text" as const, text: DOC_PROMPTS[resolvedDocType] };
 
         // Pass 1: structured generation with the real schema as a response_format constraint.
+        let strictObject: unknown = null;
         try {
           const { object } = await generateObject({
             model,
@@ -268,8 +269,67 @@ export const Route = createFileRoute("/api/scan-invoice")({
             schema: SCHEMAS[resolvedDocType] as any,
             messages: [{ role: "user", content: [promptBlock, mediaBlock] }],
           });
-          return json({ docType: resolvedDocType, data: object });
+          strictObject = object;
+          // For invoices, if the strict pass returned an empty shell (no price, generic name),
+          // fall through to the salvage pass which handles Amazon-style item arrays better.
+          if (resolvedDocType === "invoice") {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const o = object as any;
+            const looksEmpty =
+              (!o?.price_paid || o.price_paid === 0) &&
+              (!o?.name || /^(unknown|n\/?a|item)$/i.test(String(o.name).trim()));
+            if (!looksEmpty) return json({ docType: resolvedDocType, data: object });
+          } else {
+            return json({ docType: resolvedDocType, data: object });
+          }
         } catch (err) {
+          const message = err instanceof Error ? err.message : "Scan failed";
+          console.error("scan-invoice generateObject failed:", message);
+        }
+
+        // Pass 2 (salvage): ask for raw JSON, then best-effort remap common keys.
+        if (resolvedDocType === "invoice") {
+          try {
+            const { text } = await generateText({
+              model,
+              messages: [
+                {
+                  role: "user",
+                  content: [
+                    {
+                      type: "text",
+                      text:
+                        "Extract this invoice as JSON. Reply with ONLY a JSON object (no markdown fences, no commentary). Include: product name (or items[] array with description/unit_price/net_amount for each line), brand, sold_by/seller, invoice_date (any format), grand total in INR as a number (key: total or grand_total). If multiple items, include them all in items[].",
+                    },
+                    mediaBlock,
+                  ],
+                },
+              ],
+            });
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              const parsed = JSON.parse(jsonMatch[0]);
+              const salvaged = salvageInvoice(parsed);
+              if (salvaged) {
+                return json({ docType: resolvedDocType, data: salvaged, partial: true });
+              }
+            }
+          } catch (salvageErr) {
+            console.error("scan-invoice salvage failed:", salvageErr);
+          }
+        }
+
+        // If strict pass returned an empty-but-valid object, surface it rather than erroring.
+        if (strictObject) return json({ docType: resolvedDocType, data: strictObject, partial: true });
+
+        return json(
+          {
+            error: "Couldn't fully read this document. Try a clearer photo or fill the details manually.",
+            fallback: true,
+            docType: resolvedDocType,
+          },
+          200,
+        );
           const message = err instanceof Error ? err.message : "Scan failed";
           console.error("scan-invoice generateObject failed:", message);
 
