@@ -141,27 +141,56 @@ function pickString(...candidates: unknown[]): string | null {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function salvageInvoice(raw: any): z.infer<typeof InvoiceSchema> | null {
   if (!raw || typeof raw !== "object") return null;
+  // Amazon India invoices nest line items under items[] / line_items[] / products[]
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const firstItem: any = Array.isArray(raw.items) && raw.items.length > 0 ? raw.items[0] : {};
-  const name = pickString(raw.name, raw.product_name, firstItem.name, firstItem.description, firstItem.product);
+  const itemsArr: any[] =
+    (Array.isArray(raw.items) && raw.items) ||
+    (Array.isArray(raw.line_items) && raw.line_items) ||
+    (Array.isArray(raw.products) && raw.products) ||
+    [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const priceOf = (it: any) =>
+    pickNumber(it?.item_total, it?.net_amount, it?.total_price, it?.gross_amount, it?.total, it?.unit_price, it?.price);
+  // Pick the highest-value line item, not just the first
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const firstItem: any =
+    itemsArr.length > 0 ? [...itemsArr].sort((a, b) => priceOf(b) - priceOf(a))[0] : {};
+  const name = pickString(
+    raw.name,
+    raw.product_name,
+    raw.product,
+    raw.title,
+    firstItem.name,
+    firstItem.description,
+    firstItem.product_description,
+    firstItem.product,
+    firstItem.title,
+    firstItem.item_name,
+  );
   if (!name) return null;
   return {
     name,
-    brand: pickString(raw.brand, firstItem.brand),
-    serial: pickString(raw.serial, raw.asin, raw.model, firstItem.hsn, firstItem.asin),
+    brand: pickString(raw.brand, firstItem.brand, firstItem.manufacturer),
+    serial: pickString(raw.serial, raw.asin, raw.model, firstItem.asin, firstItem.hsn, firstItem.sku, firstItem.model),
     room: "other",
     price_paid: pickNumber(
       raw.price_paid,
-      raw.total_amount,
+      raw.total,
       raw.grand_total,
+      raw.total_amount,
       raw.invoice_total,
-      firstItem.item_total,
-      firstItem.net_amount,
+      raw.amount_payable,
+      raw.total_in_numbers,
+      raw.total_amount_in_numbers,
+      raw.net_payable,
+      priceOf(firstItem),
     ),
     price_now: pickNumber(raw.price_now, raw.current_market_value_inr, firstItem.current_market_value_inr),
-    purchased_at: normalizeDate(raw.purchased_at ?? raw.invoice_date ?? raw.order_date ?? raw.date),
+    purchased_at: normalizeDate(
+      raw.purchased_at ?? raw.invoice_date ?? raw.order_date ?? raw.date ?? raw.bill_date,
+    ),
     warranty_until: normalizeDate(raw.warranty_until),
-    seller: pickString(raw.seller, raw.seller_name, raw.merchant, raw.vendor),
+    seller: pickString(raw.seller, raw.seller_name, raw.sold_by, raw.dispatched_by, raw.merchant, raw.vendor, raw.billed_from),
     confidence: "medium",
   };
 }
