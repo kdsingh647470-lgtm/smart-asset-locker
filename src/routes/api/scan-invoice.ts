@@ -141,27 +141,56 @@ function pickString(...candidates: unknown[]): string | null {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function salvageInvoice(raw: any): z.infer<typeof InvoiceSchema> | null {
   if (!raw || typeof raw !== "object") return null;
+  // Amazon India invoices nest line items under items[] / line_items[] / products[]
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const firstItem: any = Array.isArray(raw.items) && raw.items.length > 0 ? raw.items[0] : {};
-  const name = pickString(raw.name, raw.product_name, firstItem.name, firstItem.description, firstItem.product);
+  const itemsArr: any[] =
+    (Array.isArray(raw.items) && raw.items) ||
+    (Array.isArray(raw.line_items) && raw.line_items) ||
+    (Array.isArray(raw.products) && raw.products) ||
+    [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const priceOf = (it: any) =>
+    pickNumber(it?.item_total, it?.net_amount, it?.total_price, it?.gross_amount, it?.total, it?.unit_price, it?.price);
+  // Pick the highest-value line item, not just the first
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const firstItem: any =
+    itemsArr.length > 0 ? [...itemsArr].sort((a, b) => priceOf(b) - priceOf(a))[0] : {};
+  const name = pickString(
+    raw.name,
+    raw.product_name,
+    raw.product,
+    raw.title,
+    firstItem.name,
+    firstItem.description,
+    firstItem.product_description,
+    firstItem.product,
+    firstItem.title,
+    firstItem.item_name,
+  );
   if (!name) return null;
   return {
     name,
-    brand: pickString(raw.brand, firstItem.brand),
-    serial: pickString(raw.serial, raw.asin, raw.model, firstItem.hsn, firstItem.asin),
+    brand: pickString(raw.brand, firstItem.brand, firstItem.manufacturer),
+    serial: pickString(raw.serial, raw.asin, raw.model, firstItem.asin, firstItem.hsn, firstItem.sku, firstItem.model),
     room: "other",
     price_paid: pickNumber(
       raw.price_paid,
-      raw.total_amount,
+      raw.total,
       raw.grand_total,
+      raw.total_amount,
       raw.invoice_total,
-      firstItem.item_total,
-      firstItem.net_amount,
+      raw.amount_payable,
+      raw.total_in_numbers,
+      raw.total_amount_in_numbers,
+      raw.net_payable,
+      priceOf(firstItem),
     ),
     price_now: pickNumber(raw.price_now, raw.current_market_value_inr, firstItem.current_market_value_inr),
-    purchased_at: normalizeDate(raw.purchased_at ?? raw.invoice_date ?? raw.order_date ?? raw.date),
+    purchased_at: normalizeDate(
+      raw.purchased_at ?? raw.invoice_date ?? raw.order_date ?? raw.date ?? raw.bill_date,
+    ),
     warranty_until: normalizeDate(raw.warranty_until),
-    seller: pickString(raw.seller, raw.seller_name, raw.merchant, raw.vendor),
+    seller: pickString(raw.seller, raw.seller_name, raw.sold_by, raw.dispatched_by, raw.merchant, raw.vendor, raw.billed_from),
     confidence: "medium",
   };
 }
@@ -232,6 +261,7 @@ export const Route = createFileRoute("/api/scan-invoice")({
         const promptBlock = { type: "text" as const, text: DOC_PROMPTS[resolvedDocType] };
 
         // Pass 1: structured generation with the real schema as a response_format constraint.
+        let strictObject: unknown = null;
         try {
           const { object } = await generateObject({
             model,
@@ -239,56 +269,67 @@ export const Route = createFileRoute("/api/scan-invoice")({
             schema: SCHEMAS[resolvedDocType] as any,
             messages: [{ role: "user", content: [promptBlock, mediaBlock] }],
           });
-          return json({ docType: resolvedDocType, data: object });
+          strictObject = object;
+          // For invoices, if the strict pass returned an empty shell (no price, generic name),
+          // fall through to the salvage pass which handles Amazon-style item arrays better.
+          if (resolvedDocType === "invoice") {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const o = object as any;
+            const looksEmpty =
+              (!o?.price_paid || o.price_paid === 0) &&
+              (!o?.name || /^(unknown|n\/?a|item)$/i.test(String(o.name).trim()));
+            if (!looksEmpty) return json({ docType: resolvedDocType, data: object });
+          } else {
+            return json({ docType: resolvedDocType, data: object });
+          }
         } catch (err) {
           const message = err instanceof Error ? err.message : "Scan failed";
           console.error("scan-invoice generateObject failed:", message);
-
-          // Pass 2 (salvage): ask for raw JSON, then best-effort remap common keys.
-          if (resolvedDocType === "invoice") {
-            try {
-              const { text } = await generateText({
-                model,
-                messages: [
-                  {
-                    role: "user",
-                    content: [
-                      {
-                        type: "text",
-                        text:
-                          "Extract this invoice as JSON. Reply with ONLY a JSON object (no markdown fences, no commentary). Include at minimum: product name, brand, total amount in INR, invoice date, seller name. If multiple items, focus on the most expensive one.",
-                      },
-                      mediaBlock,
-                    ],
-                  },
-                ],
-              });
-              const jsonMatch = text.match(/\{[\s\S]*\}/);
-              if (jsonMatch) {
-                const parsed = JSON.parse(jsonMatch[0]);
-                const salvaged = salvageInvoice(parsed);
-                if (salvaged) {
-                  return json({ docType: resolvedDocType, data: salvaged, partial: true });
-                }
-              }
-            } catch (salvageErr) {
-              console.error("scan-invoice salvage failed:", salvageErr);
-            }
-          }
-
-          const isSchemaMiss =
-            /did not match schema|No object generated|schema|validation/i.test(message);
-          return json(
-            {
-              error: isSchemaMiss
-                ? "Couldn't fully read this document. Try a clearer photo or fill the details manually."
-                : message,
-              fallback: true,
-              docType: resolvedDocType,
-            },
-            200,
-          );
         }
+
+        // Pass 2 (salvage): ask for raw JSON, then best-effort remap common keys.
+        if (resolvedDocType === "invoice") {
+          try {
+            const { text } = await generateText({
+              model,
+              messages: [
+                {
+                  role: "user",
+                  content: [
+                    {
+                      type: "text",
+                      text:
+                        "Extract this invoice as JSON. Reply with ONLY a JSON object (no markdown fences, no commentary). Include: product name (or items[] array with description/unit_price/net_amount for each line), brand, sold_by/seller, invoice_date (any format), grand total in INR as a number (key: total or grand_total). If multiple items, include them all in items[].",
+                    },
+                    mediaBlock,
+                  ],
+                },
+              ],
+            });
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              const parsed = JSON.parse(jsonMatch[0]);
+              const salvaged = salvageInvoice(parsed);
+              if (salvaged) {
+                return json({ docType: resolvedDocType, data: salvaged, partial: true });
+              }
+            }
+          } catch (salvageErr) {
+            console.error("scan-invoice salvage failed:", salvageErr);
+          }
+        }
+
+        // If strict pass returned an empty-but-valid object, surface it rather than erroring.
+        if (strictObject) return json({ docType: resolvedDocType, data: strictObject, partial: true });
+
+        return json(
+          {
+            error: "Couldn't fully read this document. Try a clearer photo or fill the details manually.",
+            fallback: true,
+            docType: resolvedDocType,
+          },
+          200,
+        );
       },
     },
   },
