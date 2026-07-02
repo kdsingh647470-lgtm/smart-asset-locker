@@ -330,54 +330,6 @@ export const Route = createFileRoute("/api/scan-invoice")({
           },
           200,
         );
-          const message = err instanceof Error ? err.message : "Scan failed";
-          console.error("scan-invoice generateObject failed:", message);
-
-          // Pass 2 (salvage): ask for raw JSON, then best-effort remap common keys.
-          if (resolvedDocType === "invoice") {
-            try {
-              const { text } = await generateText({
-                model,
-                messages: [
-                  {
-                    role: "user",
-                    content: [
-                      {
-                        type: "text",
-                        text:
-                          "Extract this invoice as JSON. Reply with ONLY a JSON object (no markdown fences, no commentary). Include at minimum: product name, brand, total amount in INR, invoice date, seller name. If multiple items, focus on the most expensive one.",
-                      },
-                      mediaBlock,
-                    ],
-                  },
-                ],
-              });
-              const jsonMatch = text.match(/\{[\s\S]*\}/);
-              if (jsonMatch) {
-                const parsed = JSON.parse(jsonMatch[0]);
-                const salvaged = salvageInvoice(parsed);
-                if (salvaged) {
-                  return json({ docType: resolvedDocType, data: salvaged, partial: true });
-                }
-              }
-            } catch (salvageErr) {
-              console.error("scan-invoice salvage failed:", salvageErr);
-            }
-          }
-
-          const isSchemaMiss =
-            /did not match schema|No object generated|schema|validation/i.test(message);
-          return json(
-            {
-              error: isSchemaMiss
-                ? "Couldn't fully read this document. Try a clearer photo or fill the details manually."
-                : message,
-              fallback: true,
-              docType: resolvedDocType,
-            },
-            200,
-          );
-        }
       },
     },
   },
