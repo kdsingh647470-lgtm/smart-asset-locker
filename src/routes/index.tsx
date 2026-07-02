@@ -1535,7 +1535,11 @@ function Inventory({ setTab }: { setTab: (t: TabKey) => void }) {
           <DbItemCard
             key={item.id}
             item={item}
-            onDelete={() => delMut.mutate(item.id)}
+            onDelete={() => {
+              if (confirm(`Delete "${item.name}"? This cannot be undone.`)) {
+                delMut.mutate(item.id);
+              }
+            }}
             onEdit={() => {
               setEditing(item);
               setShowForm(false);
