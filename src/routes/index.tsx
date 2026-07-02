@@ -1143,6 +1143,46 @@ function TaskForm({
           className="rounded-md border border-border bg-surface-0 px-2.5 py-1.5 text-[12px]"
         />
       </div>
+      <button
+        type="button"
+        onClick={async () => {
+          try {
+            // Contact Picker API (Chrome on Android, PWA-installed apps)
+            const nav = navigator as Navigator & {
+              contacts?: {
+                select: (
+                  props: string[],
+                  opts?: { multiple?: boolean },
+                ) => Promise<Array<{ name?: string[]; tel?: string[] }>>;
+              };
+            };
+            if (!nav.contacts?.select) {
+              setErr(
+                "Contact picker isn't supported in this browser. On Android, open the app in Chrome or install it as a PWA to pick from your saved contacts.",
+              );
+              return;
+            }
+            const picked = await nav.contacts.select(["name", "tel"], { multiple: false });
+            const c = picked?.[0];
+            if (!c) return;
+            const nm = c.name?.[0]?.trim();
+            const ph = c.tel?.[0]?.trim();
+            if (nm && !vendorName) setVendorName(nm);
+            else if (nm) setVendorName(nm);
+            if (ph) setVendorPhone(ph);
+            setErr(null);
+          } catch (e) {
+            // User cancel throws — ignore silently
+            if ((e as Error)?.name !== "AbortError") {
+              setErr((e as Error).message || "Couldn't open contact picker");
+            }
+          }
+        }}
+        className="self-start rounded-md border border-border bg-surface-0 px-2.5 py-1.5 text-[11px] font-medium text-foreground hover:bg-surface-1"
+      >
+        📇 Pick from phone contacts
+      </button>
+
       <textarea
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
