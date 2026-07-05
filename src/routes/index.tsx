@@ -122,6 +122,7 @@ const TABS: { key: TabKey; label: string; icon: LucideIcon }[] = [
 function GharLogApp() {
   const [tab, setTab] = useState<TabKey>("dash");
   const [notifOpen, setNotifOpen] = useState(false);
+  const touchStartX = useRef<number | null>(null);
   const { session, loading } = useAuth();
   const navigate = useNavigate();
   const itemsQ = useQuery({ queryKey: ["items"], queryFn: listItems, enabled: !!session });
