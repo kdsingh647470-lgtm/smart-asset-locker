@@ -2261,11 +2261,15 @@ function ScanMethod({ icon: Icon, name, sub }: { icon: LucideIcon; name: string;
 
 /* ------------------------- LOCKER ------------------------- */
 function Locker({ setTab }: { setTab: (t: TabKey) => void }) {
+  const { user } = useAuth();
   const itemsQ = useQuery({ queryKey: ["items"], queryFn: listItems });
   const docsQ = useQuery({ queryKey: ["documents"], queryFn: listDocuments });
   const qc = useQueryClient();
   const isDemo = (itemsQ.data ?? []).length === 0;
   const [activeCat, setActiveCat] = useState<DocType | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const docCategories: { key: DocType; name: string; icon: LucideIcon; tone: string }[] = [
     { key: "invoice", name: "Invoices", icon: FileCheck, tone: "text-[oklch(0.36_0.13_255)]" },
@@ -2281,6 +2285,13 @@ function Locker({ setTab }: { setTab: (t: TabKey) => void }) {
   const itemName = (id: string | null) => items.find((i) => i.id === id)?.name ?? "Unlinked";
   const activeDocs = activeCat ? docs.filter((d) => d.doc_type === activeCat) : [];
 
+  function openCategory(k: DocType) {
+    setActiveCat(k);
+    setTimeout(() => {
+      panelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+  }
+
   async function openDoc(d: ItemDocument) {
     try {
       const url = await getDocSignedUrl(d.file_path);
@@ -2295,6 +2306,32 @@ function Locker({ setTab }: { setTab: (t: TabKey) => void }) {
     await deleteDocument(d);
     await qc.invalidateQueries({ queryKey: ["documents"] });
   }
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !activeCat) return;
+    if (!user) {
+      toast.error("Please sign in to upload");
+      return;
+    }
+    setUploading(true);
+    try {
+      await uploadDocument({
+        userId: user.id,
+        itemId: null,
+        docType: activeCat,
+        file,
+      });
+      await qc.invalidateQueries({ queryKey: ["documents"] });
+      toast.success("Document uploaded");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
+
 
   return (
     <>
@@ -2315,7 +2352,7 @@ function Locker({ setTab }: { setTab: (t: TabKey) => void }) {
             <button
               key={c.key}
               type="button"
-              onClick={() => setActiveCat(c.key)}
+              onClick={() => openCategory(c.key)}
               className="rounded-xl border border-border bg-surface-2 p-3 text-left transition-colors hover:border-accent-blue"
             >
               <Icon className={`mb-1.5 h-[22px] w-[22px] ${c.tone}`} />
@@ -2341,7 +2378,7 @@ function Locker({ setTab }: { setTab: (t: TabKey) => void }) {
       </div>
 
       {activeCat && (
-        <div className="mb-3 rounded-xl border border-border bg-surface-2 p-3">
+        <div ref={panelRef} className="mb-3 scroll-mt-4 rounded-xl border border-border bg-surface-2 p-3">
           <div className="mb-2 flex items-center justify-between">
             <h3 className="text-[13px] font-medium">
               {docCategories.find((c) => c.key === activeCat)?.name}
@@ -2354,9 +2391,33 @@ function Locker({ setTab }: { setTab: (t: TabKey) => void }) {
               Close
             </button>
           </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,application/pdf"
+            className="hidden"
+            onChange={handleUpload}
+          />
+          <div className="mb-2 flex gap-2">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="flex-1 rounded-md border border-accent-blue bg-accent-blue/10 px-2 py-1.5 text-[11px] font-medium text-accent-blue disabled:opacity-50"
+            >
+              {uploading ? "Uploading…" : "+ Upload file"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("scan")}
+              className="flex-1 rounded-md border border-border px-2 py-1.5 text-[11px] font-medium hover:border-accent-blue"
+            >
+              Scan with camera
+            </button>
+          </div>
           {activeDocs.length === 0 ? (
             <p className="py-4 text-center text-[12px] text-text-muted">
-              No {activeCat} documents yet. Use Scan to add one.
+              No {activeCat} documents yet. Upload or scan to add one.
             </p>
           ) : (
             <ul className="divide-y divide-border">
