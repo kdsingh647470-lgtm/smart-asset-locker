@@ -175,7 +175,24 @@ function GharLogApp() {
           unread={unread}
         />
         <TabBar tab={tab} setTab={setTab} />
-        <main className="flex-1 px-4 pb-24 pt-4">
+        <main
+          className="flex-1 px-4 pb-24 pt-4"
+          onTouchStart={(e) => {
+            touchStartX.current = e.changedTouches[0].screenX;
+          }}
+          onTouchEnd={(e) => {
+            if (touchStartX.current == null) return;
+            const diff = touchStartX.current - e.changedTouches[0].screenX;
+            const threshold = 50;
+            const idx = TABS.findIndex((t) => t.key === tab);
+            if (diff > threshold && idx < TABS.length - 1) {
+              setTab(TABS[idx + 1].key);
+            } else if (diff < -threshold && idx > 0) {
+              setTab(TABS[idx - 1].key);
+            }
+            touchStartX.current = null;
+          }}
+        >
           {tab === "dash" && <Dashboard setTab={setTab} />}
           {tab === "inv" && <Inventory setTab={setTab} />}
           {tab === "scan" && <Scan />}
