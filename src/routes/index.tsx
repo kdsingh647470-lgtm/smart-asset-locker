@@ -2352,7 +2352,7 @@ function Locker({ setTab }: { setTab: (t: TabKey) => void }) {
             <button
               key={c.key}
               type="button"
-              onClick={() => setActiveCat(c.key)}
+              onClick={() => openCategory(c.key)}
               className="rounded-xl border border-border bg-surface-2 p-3 text-left transition-colors hover:border-accent-blue"
             >
               <Icon className={`mb-1.5 h-[22px] w-[22px] ${c.tone}`} />
