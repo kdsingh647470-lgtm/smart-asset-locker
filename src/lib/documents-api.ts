@@ -29,14 +29,14 @@ export async function listDocuments(): Promise<ItemDocument[]> {
 
 export async function uploadDocument(args: {
   userId: string;
-  itemId: string;
+  itemId: string | null;
   docType: DocType;
   file: File;
   extracted?: unknown;
 }): Promise<ItemDocument> {
   const { userId, itemId, docType, file, extracted } = args;
   const safe = file.name.replace(/[^A-Za-z0-9._-]+/g, "_");
-  const path = `${userId}/${itemId}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}-${safe}`;
+  const path = `${userId}/${itemId ?? "unlinked"}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}-${safe}`;
   const up = await supabase.storage
     .from(BUCKET)
     .upload(path, file, { contentType: file.type || "application/octet-stream", upsert: false });
