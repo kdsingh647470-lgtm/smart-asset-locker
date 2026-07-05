@@ -2261,11 +2261,15 @@ function ScanMethod({ icon: Icon, name, sub }: { icon: LucideIcon; name: string;
 
 /* ------------------------- LOCKER ------------------------- */
 function Locker({ setTab }: { setTab: (t: TabKey) => void }) {
+  const { user } = useAuth();
   const itemsQ = useQuery({ queryKey: ["items"], queryFn: listItems });
   const docsQ = useQuery({ queryKey: ["documents"], queryFn: listDocuments });
   const qc = useQueryClient();
   const isDemo = (itemsQ.data ?? []).length === 0;
   const [activeCat, setActiveCat] = useState<DocType | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const docCategories: { key: DocType; name: string; icon: LucideIcon; tone: string }[] = [
     { key: "invoice", name: "Invoices", icon: FileCheck, tone: "text-[oklch(0.36_0.13_255)]" },
@@ -2281,6 +2285,13 @@ function Locker({ setTab }: { setTab: (t: TabKey) => void }) {
   const itemName = (id: string | null) => items.find((i) => i.id === id)?.name ?? "Unlinked";
   const activeDocs = activeCat ? docs.filter((d) => d.doc_type === activeCat) : [];
 
+  function openCategory(k: DocType) {
+    setActiveCat(k);
+    setTimeout(() => {
+      panelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+  }
+
   async function openDoc(d: ItemDocument) {
     try {
       const url = await getDocSignedUrl(d.file_path);
@@ -2295,6 +2306,32 @@ function Locker({ setTab }: { setTab: (t: TabKey) => void }) {
     await deleteDocument(d);
     await qc.invalidateQueries({ queryKey: ["documents"] });
   }
+
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !activeCat) return;
+    if (!user) {
+      toast.error("Please sign in to upload");
+      return;
+    }
+    setUploading(true);
+    try {
+      await uploadDocument({
+        userId: user.id,
+        itemId: null,
+        docType: activeCat,
+        file,
+      });
+      await qc.invalidateQueries({ queryKey: ["documents"] });
+      toast.success("Document uploaded");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
+
 
   return (
     <>
