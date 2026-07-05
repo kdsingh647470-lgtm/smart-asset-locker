@@ -2378,7 +2378,7 @@ function Locker({ setTab }: { setTab: (t: TabKey) => void }) {
       </div>
 
       {activeCat && (
-        <div className="mb-3 rounded-xl border border-border bg-surface-2 p-3">
+        <div ref={panelRef} className="mb-3 scroll-mt-4 rounded-xl border border-border bg-surface-2 p-3">
           <div className="mb-2 flex items-center justify-between">
             <h3 className="text-[13px] font-medium">
               {docCategories.find((c) => c.key === activeCat)?.name}
@@ -2391,9 +2391,33 @@ function Locker({ setTab }: { setTab: (t: TabKey) => void }) {
               Close
             </button>
           </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*,application/pdf"
+            className="hidden"
+            onChange={handleUpload}
+          />
+          <div className="mb-2 flex gap-2">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="flex-1 rounded-md border border-accent-blue bg-accent-blue/10 px-2 py-1.5 text-[11px] font-medium text-accent-blue disabled:opacity-50"
+            >
+              {uploading ? "Uploading…" : "+ Upload file"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("scan")}
+              className="flex-1 rounded-md border border-border px-2 py-1.5 text-[11px] font-medium hover:border-accent-blue"
+            >
+              Scan with camera
+            </button>
+          </div>
           {activeDocs.length === 0 ? (
             <p className="py-4 text-center text-[12px] text-text-muted">
-              No {activeCat} documents yet. Use Scan to add one.
+              No {activeCat} documents yet. Upload or scan to add one.
             </p>
           ) : (
             <ul className="divide-y divide-border">
