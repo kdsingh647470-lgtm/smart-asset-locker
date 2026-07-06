@@ -45,7 +45,18 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!loading && session) navigate({ to: "/" });
+    if (!loading && session) {
+      let pending: string | null = null;
+      try {
+        pending = sessionStorage.getItem("gharlog:pending-invite");
+      } catch { /* ignore */ }
+      if (pending) {
+        try { sessionStorage.removeItem("gharlog:pending-invite"); } catch { /* ignore */ }
+        navigate({ to: "/invite/$token", params: { token: pending } });
+      } else {
+        navigate({ to: "/" });
+      }
+    }
   }, [loading, session, navigate]);
 
   function normalizePhone(raw: string) {

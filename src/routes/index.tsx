@@ -66,6 +66,10 @@ import {
   LogOut,
   Trash2,
   Pencil,
+  Users,
+  Copy,
+  Printer,
+  FileDown,
 
   type LucideIcon,
 } from "lucide-react";
@@ -85,6 +89,20 @@ import {
   type LifecycleStatus,
 } from "@/lib/gharlog-data";
 import { hasSeenOnboarding } from "@/lib/onboarding-storage";
+import {
+  createHousehold,
+  createInvite,
+  deleteHousehold,
+  inviteLink,
+  listInvites,
+  listMembers,
+  listMyHouseholds,
+  removeMember,
+  renameHousehold,
+  revokeInvite,
+  updateMemberRole,
+  type HouseholdRole,
+} from "@/lib/household-api";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -167,50 +185,54 @@ function GharLogApp() {
 
   return (
     <div className="min-h-screen bg-surface-0 text-text-primary">
-      <div className="mx-auto flex min-h-screen max-w-[480px] flex-col bg-surface-0 shadow-sm md:my-4 md:min-h-[calc(100vh-2rem)] md:rounded-2xl md:overflow-hidden">
-        <Header
-          onHome={() => setTab("dash")}
-          onPro={() => setTab("ins")}
-          onNotify={() => setNotifOpen(true)}
-          unread={unread}
-        />
-        <TabBar tab={tab} setTab={setTab} />
-        <main
-          className="flex-1 px-4 pb-24 pt-4"
-          onTouchStart={(e) => {
-            touchStartX.current = e.changedTouches[0].screenX;
-          }}
-          onTouchEnd={(e) => {
-            if (touchStartX.current == null) return;
-            const diff = touchStartX.current - e.changedTouches[0].screenX;
-            const threshold = 50;
-            const idx = TABS.findIndex((t) => t.key === tab);
-            if (diff > threshold && idx < TABS.length - 1) {
-              setTab(TABS[idx + 1].key);
-            } else if (diff < -threshold && idx > 0) {
-              setTab(TABS[idx - 1].key);
-            }
-            touchStartX.current = null;
-          }}
-        >
-          {tab === "dash" && <Dashboard setTab={setTab} />}
-          {tab === "inv" && <Inventory setTab={setTab} />}
-          {tab === "scan" && <Scan />}
-          {tab === "locker" && <Locker setTab={setTab} />}
-          {tab === "ai" && <AIAssistant setTab={setTab} />}
-          {tab === "ins" && <Insurance setTab={setTab} />}
-        </main>
-        {notifOpen && (
-          <NotificationsSheet
-            notifs={notifQ.data ?? []}
-            onClose={() => setNotifOpen(false)}
-            onRefresh={() => notifQ.refetch()}
-            onJump={(tab) => {
-              setNotifOpen(false);
-              setTab(tab);
-            }}
+      <div className="mx-auto flex min-h-screen w-full max-w-[1280px] items-stretch gap-4 px-0 lg:px-4">
+        <AdRail side="left" />
+        <div className="mx-auto flex min-h-screen w-full max-w-[480px] flex-col bg-surface-0 shadow-sm md:my-4 md:min-h-[calc(100vh-2rem)] md:rounded-2xl md:overflow-hidden">
+          <Header
+            onHome={() => setTab("dash")}
+            onPro={() => setTab("ins")}
+            onNotify={() => setNotifOpen(true)}
+            unread={unread}
           />
-        )}
+          <TabBar tab={tab} setTab={setTab} />
+          <main
+            className="flex-1 px-4 pb-24 pt-4"
+            onTouchStart={(e) => {
+              touchStartX.current = e.changedTouches[0].screenX;
+            }}
+            onTouchEnd={(e) => {
+              if (touchStartX.current == null) return;
+              const diff = touchStartX.current - e.changedTouches[0].screenX;
+              const threshold = 50;
+              const idx = TABS.findIndex((t) => t.key === tab);
+              if (diff > threshold && idx < TABS.length - 1) {
+                setTab(TABS[idx + 1].key);
+              } else if (diff < -threshold && idx > 0) {
+                setTab(TABS[idx - 1].key);
+              }
+              touchStartX.current = null;
+            }}
+          >
+            {tab === "dash" && <Dashboard setTab={setTab} />}
+            {tab === "inv" && <Inventory setTab={setTab} />}
+            {tab === "scan" && <Scan />}
+            {tab === "locker" && <Locker setTab={setTab} />}
+            {tab === "ai" && <AIAssistant setTab={setTab} />}
+            {tab === "ins" && <Insurance setTab={setTab} />}
+          </main>
+          {notifOpen && (
+            <NotificationsSheet
+              notifs={notifQ.data ?? []}
+              onClose={() => setNotifOpen(false)}
+              onRefresh={() => notifQ.refetch()}
+              onJump={(tab) => {
+                setNotifOpen(false);
+                setTab(tab);
+              }}
+            />
+          )}
+        </div>
+        <AdRail side="right" />
       </div>
     </div>
   );
@@ -333,6 +355,7 @@ function ProfileSheet({
   createdAt?: string;
   onClose: () => void;
 }) {
+  const [familyOpen, setFamilyOpen] = useState(false);
   const joined = createdAt ? new Date(createdAt).toLocaleDateString("en-IN", { year: "numeric", month: "short", day: "numeric" }) : null;
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50" onClick={onClose}>
@@ -369,6 +392,19 @@ function ProfileSheet({
           )}
         </dl>
 
+
+        <button
+          type="button"
+          onClick={() => setFamilyOpen(true)}
+          className="mt-3 flex w-full items-center justify-between rounded-lg border border-border bg-surface-1 px-3 py-2.5 text-left text-sm"
+        >
+          <span className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-brand" />
+            <span className="font-medium">Family sharing</span>
+          </span>
+          <span className="text-[11px] text-text-muted">Invite &amp; manage</span>
+        </button>
+
         <div className="mt-4 flex gap-2">
           <button
             type="button"
@@ -389,6 +425,7 @@ function ProfileSheet({
           </button>
         </div>
       </div>
+      {familyOpen && <FamilySheet onClose={() => setFamilyOpen(false)} />}
     </div>
   );
 }
@@ -2688,9 +2725,26 @@ function Insurance({ setTab }: { setTab: (t: TabKey) => void }) {
   const isPro = planQ.data?.plan === "pro";
   const itemsQ = useQuery({ queryKey: ["items"], queryFn: listItems });
   const isDemo = (itemsQ.data ?? []).length === 0;
+  const [reportOpen, setReportOpen] = useState(false);
   return (
     <>
       {isDemo && <DemoBanner setTab={setTab} />}
+
+      <button
+        type="button"
+        onClick={() => setReportOpen(true)}
+        className="mb-3 flex w-full items-center justify-between rounded-xl border border-border bg-surface-1 px-3.5 py-3 text-left"
+      >
+        <span className="flex items-center gap-2">
+          <FileText className="h-4 w-4 text-brand" />
+          <span>
+            <span className="block text-[13px] font-medium">Insurance report</span>
+            <span className="block text-[11px] text-text-muted">Coverage summary, gaps and PDF for your insurer</span>
+          </span>
+        </span>
+        <FileDown className="h-4 w-4 text-text-muted" />
+      </button>
+
 
       <section className="mb-3 rounded-2xl bg-brand p-4 text-brand-foreground">
         <h3 className="mb-3 text-[14px] font-medium opacity-90">
@@ -2836,6 +2890,8 @@ function Insurance({ setTab }: { setTab: (t: TabKey) => void }) {
           </div>
         </div>
       )}
+
+      {reportOpen && <InsuranceReport items={itemsQ.data ?? []} onClose={() => setReportOpen(false)} />}
     </>
   );
 }
@@ -2920,3 +2976,606 @@ function PlanCard({
     </div>
   );
 }
+
+/* ------------------------- FAMILY SHARING ------------------------- */
+function FamilySheet({ onClose }: { onClose: () => void }) {
+  const { session } = useAuth();
+  const qc = useQueryClient();
+  const userId = session?.user.id ?? "";
+  const myEmail = session?.user.email ?? "";
+  const householdsQ = useQuery({ queryKey: ["households"], queryFn: listMyHouseholds, enabled: !!session });
+  const households = householdsQ.data ?? [];
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const active = households.find((h) => h.id === activeId) ?? households[0] ?? null;
+  const isOwner = !!(active && active.owner_id === userId);
+
+  const membersQ = useQuery({
+    queryKey: ["household-members", active?.id],
+    queryFn: () => listMembers(active!.id),
+    enabled: !!active,
+  });
+  const invitesQ = useQuery({
+    queryKey: ["household-invites", active?.id],
+    queryFn: () => listInvites(active!.id),
+    enabled: !!active && isOwner,
+  });
+
+  const [name, setName] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<HouseholdRole>("viewer");
+
+  const createH = useMutation({
+    mutationFn: () => createHousehold(name || "My Household", userId),
+    onSuccess: (h) => {
+      setName("");
+      setActiveId(h.id);
+      qc.invalidateQueries({ queryKey: ["households"] });
+      toast.success("Household created");
+    },
+    onError: (e) => toast.error((e as Error).message),
+  });
+  const invite = useMutation({
+    mutationFn: () => createInvite(active!.id, inviteEmail, inviteRole, userId),
+    onSuccess: (inv) => {
+      setInviteEmail("");
+      qc.invalidateQueries({ queryKey: ["household-invites", active?.id] });
+      const link = inviteLink(inv.token);
+      navigator.clipboard?.writeText(link).catch(() => {});
+      toast.success("Invite created", { description: "Link copied — share it with your family." });
+    },
+    onError: (e) => toast.error((e as Error).message),
+  });
+  const removeM = useMutation({
+    mutationFn: (id: string) => removeMember(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["household-members", active?.id] }),
+    onError: (e) => toast.error((e as Error).message),
+  });
+  const changeRole = useMutation({
+    mutationFn: (v: { id: string; role: HouseholdRole }) => updateMemberRole(v.id, v.role),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["household-members", active?.id] }),
+    onError: (e) => toast.error((e as Error).message),
+  });
+  const revoke = useMutation({
+    mutationFn: (id: string) => revokeInvite(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["household-invites", active?.id] }),
+  });
+  const rename = useMutation({
+    mutationFn: (v: { id: string; name: string }) => renameHousehold(v.id, v.name),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["households"] }),
+  });
+  const deleteH = useMutation({
+    mutationFn: (id: string) => deleteHousehold(id),
+    onSuccess: () => {
+      setActiveId(null);
+      qc.invalidateQueries({ queryKey: ["households"] });
+      toast.success("Household deleted");
+    },
+    onError: (e) => toast.error((e as Error).message),
+  });
+
+  function copyLink(token: string) {
+    navigator.clipboard?.writeText(inviteLink(token)).then(
+      () => toast.success("Link copied"),
+      () => toast.error("Copy failed"),
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 sm:items-center" onClick={onClose}>
+      <div
+        className="flex max-h-[90vh] w-full max-w-[520px] flex-col overflow-hidden rounded-t-2xl bg-surface-0 shadow-xl sm:rounded-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-border bg-surface-1 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-brand" />
+            <h3 className="text-[15px] font-medium">Family sharing</h3>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-full bg-surface-2 px-3 py-1 text-[12px]">
+            Done
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 py-4">
+          {householdsQ.isLoading && <div className="text-sm text-text-muted">Loading…</div>}
+
+          {!householdsQ.isLoading && households.length === 0 && (
+            <div className="space-y-3">
+              <p className="text-[13px] text-text-muted">
+                Create a household to share your inventory, warranties and documents with family.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Household name (e.g. Sharma Home)"
+                  className="flex-1 rounded-lg border border-border bg-surface-1 px-3 py-2 text-[13px] outline-none focus:border-accent-blue"
+                />
+                <button
+                  type="button"
+                  disabled={createH.isPending}
+                  onClick={() => createH.mutate()}
+                  className="rounded-lg bg-brand px-3 py-2 text-[12px] font-medium text-brand-foreground disabled:opacity-60"
+                >
+                  Create
+                </button>
+              </div>
+            </div>
+          )}
+
+          {active && (
+            <>
+              {households.length > 1 && (
+                <div className="mb-3 flex flex-wrap gap-1.5">
+                  {households.map((h) => (
+                    <button
+                      key={h.id}
+                      type="button"
+                      onClick={() => setActiveId(h.id)}
+                      className={`rounded-full border px-2.5 py-1 text-[11px] ${
+                        active.id === h.id
+                          ? "border-brand bg-brand text-brand-foreground"
+                          : "border-border bg-surface-1 text-text-secondary"
+                      }`}
+                    >
+                      {h.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <div className="mb-4 rounded-xl border border-border bg-surface-1 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <input
+                    defaultValue={active.name}
+                    disabled={!isOwner}
+                    onBlur={(e) => {
+                      const v = e.currentTarget.value.trim();
+                      if (v && v !== active.name) rename.mutate({ id: active.id, name: v });
+                    }}
+                    className="flex-1 rounded-md bg-transparent px-1 py-0.5 text-[14px] font-medium outline-none disabled:opacity-70 focus:bg-surface-2"
+                  />
+                  <span className="text-[10px] uppercase tracking-wide text-text-muted">
+                    {isOwner ? "Owner" : "Member"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-text-muted">
+                  Members ({membersQ.data?.length ?? 0})
+                </div>
+                <ul className="space-y-1.5">
+                  {(membersQ.data ?? []).map((m) => (
+                    <li
+                      key={m.id}
+                      className="flex items-center justify-between gap-2 rounded-lg border border-border bg-surface-1 px-3 py-2 text-[12.5px]"
+                    >
+                      <div className="min-w-0 flex-1 truncate">
+                        <div className="font-medium">
+                          {m.user_id === userId ? "You" : m.user_id.slice(0, 8) + "…"}
+                        </div>
+                      </div>
+                      {isOwner && m.user_id !== userId ? (
+                        <>
+                          <select
+                            value={m.role}
+                            onChange={(e) => changeRole.mutate({ id: m.id, role: e.target.value as HouseholdRole })}
+                            className="rounded border border-border bg-surface-2 px-1.5 py-0.5 text-[11px]"
+                          >
+                            <option value="viewer">Viewer</option>
+                            <option value="editor">Editor</option>
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => removeM.mutate(m.id)}
+                            className="rounded p-1 text-bad hover:bg-bad/10"
+                            aria-label="Remove"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </>
+                      ) : (
+                        <span className="rounded bg-surface-2 px-1.5 py-0.5 text-[10px] capitalize text-text-muted">
+                          {m.role}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {isOwner && (
+                <div className="mb-4 rounded-xl border border-border bg-surface-1 p-3">
+                  <div className="mb-2 text-[12px] font-medium">Invite a family member</div>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <input
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      type="email"
+                      placeholder="family@example.com"
+                      className="flex-1 rounded-lg border border-border bg-surface-2 px-3 py-2 text-[13px] outline-none focus:border-accent-blue"
+                    />
+                    <select
+                      value={inviteRole}
+                      onChange={(e) => setInviteRole(e.target.value as HouseholdRole)}
+                      className="rounded-lg border border-border bg-surface-2 px-2 py-2 text-[12px]"
+                    >
+                      <option value="viewer">Viewer</option>
+                      <option value="editor">Editor</option>
+                    </select>
+                    <button
+                      type="button"
+                      disabled={!inviteEmail.trim() || invite.isPending}
+                      onClick={() => invite.mutate()}
+                      className="rounded-lg bg-brand px-3 py-2 text-[12px] font-medium text-brand-foreground disabled:opacity-60"
+                    >
+                      Send invite
+                    </button>
+                  </div>
+                  <p className="mt-1.5 text-[10.5px] text-text-muted">
+                    Creates a secure invite link, valid for 14 days. Share via WhatsApp, email or SMS.
+                  </p>
+                </div>
+              )}
+
+              {isOwner && (invitesQ.data ?? []).length > 0 && (
+                <div className="mb-4">
+                  <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-text-muted">
+                    Pending invites
+                  </div>
+                  <ul className="space-y-1.5">
+                    {(invitesQ.data ?? [])
+                      .filter((i) => !i.accepted_at)
+                      .map((i) => (
+                        <li
+                          key={i.id}
+                          className="flex items-center justify-between gap-2 rounded-lg border border-border bg-surface-1 px-3 py-2 text-[12px]"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate font-medium">{i.email}</div>
+                            <div className="text-[10px] text-text-muted">
+                              {i.role} · expires {new Date(i.expires_at).toLocaleDateString("en-IN")}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => copyLink(i.token)}
+                            className="rounded p-1 text-brand hover:bg-brand/10"
+                            aria-label="Copy link"
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => revoke.mutate(i.id)}
+                            className="rounded p-1 text-bad hover:bg-bad/10"
+                            aria-label="Revoke"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              )}
+
+              {isOwner && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirm(`Delete household "${active.name}"? Members will lose access.`))
+                      deleteH.mutate(active.id);
+                  }}
+                  className="mt-2 w-full rounded-lg border border-bad/30 bg-bad/5 py-2 text-[12px] font-medium text-bad"
+                >
+                  Delete household
+                </button>
+              )}
+
+              {!isOwner && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const me = (membersQ.data ?? []).find((m) => m.user_id === userId);
+                    if (me && confirm(`Leave "${active.name}"?`)) removeM.mutate(me.id);
+                  }}
+                  className="mt-2 w-full rounded-lg border border-border bg-surface-1 py-2 text-[12px] font-medium"
+                >
+                  Leave household
+                </button>
+              )}
+
+              <p className="mt-4 text-[10.5px] text-text-muted">
+                Signed in as {myEmail || "—"}. Editors can add and change items; viewers see everything read-only.
+              </p>
+
+              {households.length > 0 && (
+                <div className="mt-4 rounded-xl border border-dashed border-border bg-surface-1 p-3">
+                  <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-text-muted">
+                    Create another household
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="New household name"
+                      className="flex-1 rounded-lg border border-border bg-surface-2 px-3 py-2 text-[13px] outline-none focus:border-accent-blue"
+                    />
+                    <button
+                      type="button"
+                      disabled={createH.isPending}
+                      onClick={() => createH.mutate()}
+                      className="rounded-lg bg-brand px-3 py-2 text-[12px] font-medium text-brand-foreground disabled:opacity-60"
+                    >
+                      Create
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------- INSURANCE REPORT ------------------------- */
+function InsuranceReport({ items, onClose }: { items: DbItem[]; onClose: () => void }) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const totalValue = items.reduce((s, it) => s + Number(it.price_now || 0), 0);
+  const insured = items.filter(
+    (it) => it.insured_until && new Date(it.insured_until + "T00:00:00") >= today,
+  );
+  const insuredValue = insured.reduce((s, it) => s + Number(it.price_now || 0), 0);
+  const expired = items.filter(
+    (it) => it.insured_until && new Date(it.insured_until + "T00:00:00") < today,
+  );
+  const uninsured = items.filter((it) => !it.insured_until);
+  const gap = Math.max(0, totalValue - insuredValue);
+  const coveragePct = totalValue > 0 ? Math.round((insuredValue / totalValue) * 100) : 0;
+
+  const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
+  const fmtDate = (d: string | null) =>
+    d ? new Date(d + "T00:00:00").toLocaleDateString("en-IN", { year: "numeric", month: "short", day: "numeric" }) : "—";
+
+  const printReport = () => {
+    const win = window.open("", "_blank", "noopener,noreferrer,width=900,height=1100");
+    if (!win) {
+      toast.error("Enable pop-ups to download the PDF");
+      return;
+    }
+    const rows = items
+      .map(
+        (it) => `
+        <tr>
+          <td>${escapeHtml(it.name)}</td>
+          <td>${escapeHtml(it.brand ?? "")}</td>
+          <td>${escapeHtml(it.room)}</td>
+          <td class="num">${inr(it.price_now)}</td>
+          <td>${fmtDate(it.insured_until)}</td>
+          <td class="status status-${insuranceStatus(it, today)}">${insuranceStatusLabel(it, today)}</td>
+        </tr>`,
+      )
+      .join("");
+    win.document.write(`<!doctype html><html><head><meta charset="utf-8" />
+      <title>GharLog Insurance Report — ${new Date().toLocaleDateString("en-IN")}</title>
+      <style>
+        *{box-sizing:border-box}
+        body{font:13px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#111;margin:32px;}
+        h1{font-size:22px;margin:0 0 4px;}
+        .sub{color:#666;font-size:12px;margin-bottom:20px;}
+        .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:22px;}
+        .card{border:1px solid #ddd;border-radius:10px;padding:10px;}
+        .lbl{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.05em;}
+        .val{font-size:16px;font-weight:600;margin-top:4px;}
+        .val.bad{color:#c53030;} .val.ok{color:#276749;}
+        table{width:100%;border-collapse:collapse;margin-top:8px;}
+        th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #eee;font-size:12px;}
+        th{background:#f7f7f8;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;}
+        td.num{text-align:right;font-variant-numeric:tabular-nums;}
+        .status{font-weight:600;font-size:11px;}
+        .status-insured{color:#276749;} .status-expired{color:#c53030;} .status-none{color:#a05a00;}
+        .foot{margin-top:20px;font-size:11px;color:#777;}
+        h2{font-size:14px;margin:22px 0 6px;}
+        @media print{body{margin:14mm;} .noprint{display:none;}}
+      </style></head><body>
+      <button class="noprint" onclick="window.print()" style="float:right;padding:6px 12px;border-radius:6px;border:1px solid #333;background:#fff;cursor:pointer">Print / Save PDF</button>
+      <h1>Insurance Report</h1>
+      <div class="sub">GharLog · Generated ${new Date().toLocaleString("en-IN")}</div>
+      <div class="grid">
+        <div class="card"><div class="lbl">Total home value</div><div class="val">${inr(totalValue)}</div></div>
+        <div class="card"><div class="lbl">Currently insured</div><div class="val ok">${inr(insuredValue)}</div></div>
+        <div class="card"><div class="lbl">Coverage</div><div class="val">${coveragePct}%</div></div>
+        <div class="card"><div class="lbl">Coverage gap</div><div class="val ${gap > 0 ? "bad" : "ok"}">${inr(gap)}</div></div>
+      </div>
+      <h2>All items (${items.length})</h2>
+      <table>
+        <thead><tr><th>Item</th><th>Brand</th><th>Room</th><th class="num">Value</th><th>Insured until</th><th>Status</th></tr></thead>
+        <tbody>${rows || `<tr><td colspan="6" style="text-align:center;color:#999;padding:20px">No items</td></tr>`}</tbody>
+      </table>
+      <div class="foot">
+        Uninsured items: ${uninsured.length} · Expired: ${expired.length}<br/>
+        Share this report with your insurer to discuss revised coverage. Verified asset records typically qualify for 10–15% premium discounts.
+      </div>
+      <script>setTimeout(()=>window.print(),400)</script>
+    </body></html>`);
+    win.document.close();
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 sm:items-center" onClick={onClose}>
+      <div
+        className="flex max-h-[90vh] w-full max-w-[520px] flex-col overflow-hidden rounded-t-2xl bg-surface-0 shadow-xl sm:rounded-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-border bg-surface-1 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Shield className="h-4 w-4 text-brand" />
+            <h3 className="text-[15px] font-medium">Insurance report</h3>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-full bg-surface-2 px-3 py-1 text-[12px]">
+            Done
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4">
+          <div className="grid grid-cols-2 gap-2">
+            <StatCard label="Total value" value={inr(totalValue)} />
+            <StatCard label="Insured" value={inr(insuredValue)} tone="ok" />
+            <StatCard label="Coverage" value={`${coveragePct}%`} />
+            <StatCard label="Gap" value={inr(gap)} tone={gap > 0 ? "bad" : "ok"} />
+          </div>
+
+          {expired.length > 0 && (
+            <div className="mt-4">
+              <div className="mb-1.5 flex items-center gap-1.5 text-[12px] font-medium text-bad">
+                <AlertTriangle className="h-3.5 w-3.5" /> Expired ({expired.length})
+              </div>
+              <ul className="space-y-1">
+                {expired.map((it) => (
+                  <li key={it.id} className="flex justify-between rounded-md bg-bad/5 px-2.5 py-1.5 text-[12px]">
+                    <span className="truncate">{it.name}</span>
+                    <span className="text-text-muted">{fmtDate(it.insured_until)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {uninsured.length > 0 && (
+            <div className="mt-4">
+              <div className="mb-1.5 flex items-center gap-1.5 text-[12px] font-medium text-[oklch(0.5_0.14_65)]">
+                <AlertCircle className="h-3.5 w-3.5" /> Uninsured ({uninsured.length})
+              </div>
+              <ul className="space-y-1">
+                {uninsured.slice(0, 8).map((it) => (
+                  <li key={it.id} className="flex justify-between rounded-md bg-surface-1 px-2.5 py-1.5 text-[12px]">
+                    <span className="truncate">{it.name}</span>
+                    <span className="tabular-nums text-text-muted">{inr(it.price_now)}</span>
+                  </li>
+                ))}
+                {uninsured.length > 8 && (
+                  <li className="text-[11px] text-text-muted">+ {uninsured.length - 8} more</li>
+                )}
+              </ul>
+            </div>
+          )}
+
+          {insured.length > 0 && (
+            <div className="mt-4">
+              <div className="mb-1.5 flex items-center gap-1.5 text-[12px] font-medium text-ok">
+                <ShieldCheck className="h-3.5 w-3.5" /> Insured ({insured.length})
+              </div>
+              <ul className="space-y-1">
+                {insured.map((it) => (
+                  <li key={it.id} className="flex justify-between rounded-md bg-ok/5 px-2.5 py-1.5 text-[12px]">
+                    <span className="truncate">{it.name}</span>
+                    <span className="text-text-muted">until {fmtDate(it.insured_until)}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-2 border-t border-border bg-surface-1 px-4 py-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 rounded-lg border border-border bg-surface-2 py-2 text-[12px] font-medium"
+          >
+            Close
+          </button>
+          <button
+            type="button"
+            onClick={printReport}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-brand py-2 text-[12px] font-medium text-brand-foreground"
+          >
+            <FileDown className="h-3.5 w-3.5" /> Download PDF
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ label, value, tone }: { label: string; value: string; tone?: "ok" | "bad" }) {
+  return (
+    <div className="rounded-xl border border-border bg-surface-1 p-3">
+      <div className="text-[10px] uppercase tracking-wide text-text-muted">{label}</div>
+      <div
+        className={`mt-1 text-[16px] font-medium tabular-nums ${
+          tone === "ok" ? "text-ok" : tone === "bad" ? "text-bad" : ""
+        }`}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function insuranceStatus(it: DbItem, today: Date): "insured" | "expired" | "none" {
+  if (!it.insured_until) return "none";
+  return new Date(it.insured_until + "T00:00:00") >= today ? "insured" : "expired";
+}
+function insuranceStatusLabel(it: DbItem, today: Date): string {
+  const s = insuranceStatus(it, today);
+  return s === "insured" ? "Insured" : s === "expired" ? "Expired" : "Uninsured";
+}
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]!));
+}
+
+/* ------------------------- DESKTOP AD RAILS ------------------------- */
+function AdRail({ side }: { side: "left" | "right" }) {
+  const client =
+    (typeof window !== "undefined" && (window as unknown as { __ADSENSE_CLIENT__?: string }).__ADSENSE_CLIENT__) ||
+    (import.meta.env.VITE_ADSENSE_CLIENT as string | undefined);
+  const slot =
+    side === "left"
+      ? (import.meta.env.VITE_ADSENSE_SLOT_LEFT as string | undefined)
+      : (import.meta.env.VITE_ADSENSE_SLOT_RIGHT as string | undefined);
+  return (
+    <aside
+      className="pointer-events-none hidden lg:flex lg:w-[240px] xl:w-[300px] shrink-0 items-start justify-center pt-6"
+      aria-label={`Sponsored ${side} rail`}
+    >
+      <div className="pointer-events-auto sticky top-4 flex h-[600px] w-full max-w-[300px] flex-col overflow-hidden rounded-xl border border-dashed border-border bg-surface-1 text-[11px] text-text-muted">
+        {client && slot ? (
+          <AdSlot client={client} slot={slot} />
+        ) : (
+          <div className="flex h-full flex-col items-center justify-center gap-1 px-3 text-center">
+            <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[10px] uppercase tracking-wide">Ad</span>
+            <span className="mt-2 text-[11px]">Sponsored space</span>
+            <span className="text-[10px] opacity-70">Set VITE_ADSENSE_CLIENT to enable</span>
+          </div>
+        )}
+      </div>
+    </aside>
+  );
+}
+
+function AdSlot({ client, slot }: { client: string; slot: string }) {
+  useEffect(() => {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const w = window as any;
+      (w.adsbygoogle = w.adsbygoogle || []).push({});
+    } catch { /* ignore */ }
+  }, []);
+  return (
+    <ins
+      className="adsbygoogle"
+      style={{ display: "block", width: "100%", height: "100%" }}
+      data-ad-client={client}
+      data-ad-slot={slot}
+      data-ad-format="auto"
+      data-full-width-responsive="true"
+    />
+  );
+}
+
