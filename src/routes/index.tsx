@@ -351,6 +351,7 @@ function ProfileSheet({
   createdAt?: string;
   onClose: () => void;
 }) {
+  const [familyOpen, setFamilyOpen] = useState(false);
   const joined = createdAt ? new Date(createdAt).toLocaleDateString("en-IN", { year: "numeric", month: "short", day: "numeric" }) : null;
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50" onClick={onClose}>
@@ -421,7 +422,6 @@ function ProfileSheet({
         </div>
       </div>
       {familyOpen && <FamilySheet onClose={() => setFamilyOpen(false)} />}
-      </div>
     </div>
   );
 }
