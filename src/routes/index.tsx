@@ -66,6 +66,10 @@ import {
   LogOut,
   Trash2,
   Pencil,
+  Users,
+  Copy,
+  Printer,
+  FileDown,
 
   type LucideIcon,
 } from "lucide-react";
@@ -85,6 +89,20 @@ import {
   type LifecycleStatus,
 } from "@/lib/gharlog-data";
 import { hasSeenOnboarding } from "@/lib/onboarding-storage";
+import {
+  createHousehold,
+  createInvite,
+  deleteHousehold,
+  inviteLink,
+  listInvites,
+  listMembers,
+  listMyHouseholds,
+  removeMember,
+  renameHousehold,
+  revokeInvite,
+  updateMemberRole,
+  type HouseholdRole,
+} from "@/lib/household-api";
 
 export const Route = createFileRoute("/")({
   head: () => ({
