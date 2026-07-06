@@ -14,6 +14,7 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as FirebaseMessagingSwDotjsRouteImport } from './routes/firebase-messaging-sw[.]js'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as ApiScanInvoiceRouteImport } from './routes/api/scan-invoice'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiPublicSendDueRemindersRouteImport } from './routes/api/public/send-due-reminders'
@@ -43,6 +44,11 @@ const AuthRoute = AuthRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiScanInvoiceRoute = ApiScanInvoiceRouteImport.update({
@@ -75,6 +81,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
   '/api/scan-invoice': typeof ApiScanInvoiceRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/api/public/firebase-config': typeof ApiPublicFirebaseConfigRoute
   '/api/public/send-due-reminders': typeof ApiPublicSendDueRemindersRoute
 }
@@ -86,6 +93,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
   '/api/scan-invoice': typeof ApiScanInvoiceRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/api/public/firebase-config': typeof ApiPublicFirebaseConfigRoute
   '/api/public/send-due-reminders': typeof ApiPublicSendDueRemindersRoute
 }
@@ -98,6 +106,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
   '/api/scan-invoice': typeof ApiScanInvoiceRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/api/public/firebase-config': typeof ApiPublicFirebaseConfigRoute
   '/api/public/send-due-reminders': typeof ApiPublicSendDueRemindersRoute
 }
@@ -111,6 +120,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/api/chat'
     | '/api/scan-invoice'
+    | '/invite/$token'
     | '/api/public/firebase-config'
     | '/api/public/send-due-reminders'
   fileRoutesByTo: FileRoutesByTo
@@ -122,6 +132,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/api/chat'
     | '/api/scan-invoice'
+    | '/invite/$token'
     | '/api/public/firebase-config'
     | '/api/public/send-due-reminders'
   id:
@@ -133,6 +144,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/api/chat'
     | '/api/scan-invoice'
+    | '/invite/$token'
     | '/api/public/firebase-config'
     | '/api/public/send-due-reminders'
   fileRoutesById: FileRoutesById
@@ -145,6 +157,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiScanInvoiceRoute: typeof ApiScanInvoiceRoute
+  InviteTokenRoute: typeof InviteTokenRoute
   ApiPublicFirebaseConfigRoute: typeof ApiPublicFirebaseConfigRoute
   ApiPublicSendDueRemindersRoute: typeof ApiPublicSendDueRemindersRoute
 }
@@ -186,6 +199,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/scan-invoice': {
       id: '/api/scan-invoice'
       path: '/api/scan-invoice'
@@ -225,6 +245,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiChatRoute: ApiChatRoute,
   ApiScanInvoiceRoute: ApiScanInvoiceRoute,
+  InviteTokenRoute: InviteTokenRoute,
   ApiPublicFirebaseConfigRoute: ApiPublicFirebaseConfigRoute,
   ApiPublicSendDueRemindersRoute: ApiPublicSendDueRemindersRoute,
 }
