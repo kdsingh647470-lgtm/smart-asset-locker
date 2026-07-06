@@ -185,50 +185,54 @@ function GharLogApp() {
 
   return (
     <div className="min-h-screen bg-surface-0 text-text-primary">
-      <div className="mx-auto flex min-h-screen max-w-[480px] flex-col bg-surface-0 shadow-sm md:my-4 md:min-h-[calc(100vh-2rem)] md:rounded-2xl md:overflow-hidden">
-        <Header
-          onHome={() => setTab("dash")}
-          onPro={() => setTab("ins")}
-          onNotify={() => setNotifOpen(true)}
-          unread={unread}
-        />
-        <TabBar tab={tab} setTab={setTab} />
-        <main
-          className="flex-1 px-4 pb-24 pt-4"
-          onTouchStart={(e) => {
-            touchStartX.current = e.changedTouches[0].screenX;
-          }}
-          onTouchEnd={(e) => {
-            if (touchStartX.current == null) return;
-            const diff = touchStartX.current - e.changedTouches[0].screenX;
-            const threshold = 50;
-            const idx = TABS.findIndex((t) => t.key === tab);
-            if (diff > threshold && idx < TABS.length - 1) {
-              setTab(TABS[idx + 1].key);
-            } else if (diff < -threshold && idx > 0) {
-              setTab(TABS[idx - 1].key);
-            }
-            touchStartX.current = null;
-          }}
-        >
-          {tab === "dash" && <Dashboard setTab={setTab} />}
-          {tab === "inv" && <Inventory setTab={setTab} />}
-          {tab === "scan" && <Scan />}
-          {tab === "locker" && <Locker setTab={setTab} />}
-          {tab === "ai" && <AIAssistant setTab={setTab} />}
-          {tab === "ins" && <Insurance setTab={setTab} />}
-        </main>
-        {notifOpen && (
-          <NotificationsSheet
-            notifs={notifQ.data ?? []}
-            onClose={() => setNotifOpen(false)}
-            onRefresh={() => notifQ.refetch()}
-            onJump={(tab) => {
-              setNotifOpen(false);
-              setTab(tab);
-            }}
+      <div className="mx-auto flex min-h-screen w-full max-w-[1280px] items-stretch gap-4 px-0 lg:px-4">
+        <AdRail side="left" />
+        <div className="mx-auto flex min-h-screen w-full max-w-[480px] flex-col bg-surface-0 shadow-sm md:my-4 md:min-h-[calc(100vh-2rem)] md:rounded-2xl md:overflow-hidden">
+          <Header
+            onHome={() => setTab("dash")}
+            onPro={() => setTab("ins")}
+            onNotify={() => setNotifOpen(true)}
+            unread={unread}
           />
-        )}
+          <TabBar tab={tab} setTab={setTab} />
+          <main
+            className="flex-1 px-4 pb-24 pt-4"
+            onTouchStart={(e) => {
+              touchStartX.current = e.changedTouches[0].screenX;
+            }}
+            onTouchEnd={(e) => {
+              if (touchStartX.current == null) return;
+              const diff = touchStartX.current - e.changedTouches[0].screenX;
+              const threshold = 50;
+              const idx = TABS.findIndex((t) => t.key === tab);
+              if (diff > threshold && idx < TABS.length - 1) {
+                setTab(TABS[idx + 1].key);
+              } else if (diff < -threshold && idx > 0) {
+                setTab(TABS[idx - 1].key);
+              }
+              touchStartX.current = null;
+            }}
+          >
+            {tab === "dash" && <Dashboard setTab={setTab} />}
+            {tab === "inv" && <Inventory setTab={setTab} />}
+            {tab === "scan" && <Scan />}
+            {tab === "locker" && <Locker setTab={setTab} />}
+            {tab === "ai" && <AIAssistant setTab={setTab} />}
+            {tab === "ins" && <Insurance setTab={setTab} />}
+          </main>
+          {notifOpen && (
+            <NotificationsSheet
+              notifs={notifQ.data ?? []}
+              onClose={() => setNotifOpen(false)}
+              onRefresh={() => notifQ.refetch()}
+              onJump={(tab) => {
+                setNotifOpen(false);
+                setTab(tab);
+              }}
+            />
+          )}
+        </div>
+        <AdRail side="right" />
       </div>
     </div>
   );
