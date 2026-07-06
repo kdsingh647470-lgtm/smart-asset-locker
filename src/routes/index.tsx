@@ -387,6 +387,19 @@ function ProfileSheet({
           )}
         </dl>
 
+
+        <button
+          type="button"
+          onClick={() => setFamilyOpen(true)}
+          className="mt-3 flex w-full items-center justify-between rounded-lg border border-border bg-surface-1 px-3 py-2.5 text-left text-sm"
+        >
+          <span className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-brand" />
+            <span className="font-medium">Family sharing</span>
+          </span>
+          <span className="text-[11px] text-text-muted">Invite &amp; manage</span>
+        </button>
+
         <div className="mt-4 flex gap-2">
           <button
             type="button"
@@ -406,6 +419,8 @@ function ProfileSheet({
             <LogOut className="h-4 w-4" /> Sign out
           </button>
         </div>
+      </div>
+      {familyOpen && <FamilySheet onClose={() => setFamilyOpen(false)} />}
       </div>
     </div>
   );
