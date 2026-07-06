@@ -2725,9 +2725,26 @@ function Insurance({ setTab }: { setTab: (t: TabKey) => void }) {
   const isPro = planQ.data?.plan === "pro";
   const itemsQ = useQuery({ queryKey: ["items"], queryFn: listItems });
   const isDemo = (itemsQ.data ?? []).length === 0;
+  const [reportOpen, setReportOpen] = useState(false);
   return (
     <>
       {isDemo && <DemoBanner setTab={setTab} />}
+
+      <button
+        type="button"
+        onClick={() => setReportOpen(true)}
+        className="mb-3 flex w-full items-center justify-between rounded-xl border border-border bg-surface-1 px-3.5 py-3 text-left"
+      >
+        <span className="flex items-center gap-2">
+          <FileText className="h-4 w-4 text-brand" />
+          <span>
+            <span className="block text-[13px] font-medium">Insurance report</span>
+            <span className="block text-[11px] text-text-muted">Coverage summary, gaps and PDF for your insurer</span>
+          </span>
+        </span>
+        <FileDown className="h-4 w-4 text-text-muted" />
+      </button>
+
 
       <section className="mb-3 rounded-2xl bg-brand p-4 text-brand-foreground">
         <h3 className="mb-3 text-[14px] font-medium opacity-90">
