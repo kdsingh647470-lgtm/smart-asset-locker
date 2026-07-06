@@ -2890,6 +2890,8 @@ function Insurance({ setTab }: { setTab: (t: TabKey) => void }) {
           </div>
         </div>
       )}
+
+      {reportOpen && <InsuranceReport items={itemsQ.data ?? []} onClose={() => setReportOpen(false)} />}
     </>
   );
 }
