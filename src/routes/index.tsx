@@ -1545,24 +1545,22 @@ function Inventory({ setTab }: { setTab: (t: TabKey) => void }) {
       )}
 
 
-      <div className="-mx-4 mb-3 flex gap-2 overflow-x-auto px-4 pb-1">
-        {rooms.map((r) => {
-          const active = room === r.key;
-          return (
-            <button
-              key={r.key}
-              type="button"
-              onClick={() => setRoom(r.key)}
-              className={`flex-shrink-0 rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors ${
-                active
-                  ? "border-brand bg-brand text-brand-foreground"
-                  : "border-border bg-surface-2 text-text-secondary"
-              }`}
-            >
+      <div className="mb-3">
+        <label htmlFor="room-filter" className="sr-only">
+          Filter by room
+        </label>
+        <select
+          id="room-filter"
+          value={room}
+          onChange={(e) => setRoom(e.target.value)}
+          className="w-full rounded-xl border border-border bg-surface-2 px-3 py-2.5 text-[13px] font-medium text-text-primary outline-none focus:border-accent-blue"
+        >
+          {rooms.map((r) => (
+            <option key={r.key} value={r.key}>
               {r.label} ({r.count})
-            </button>
-          );
-        })}
+            </option>
+          ))}
+        </select>
       </div>
 
       {itemsQ.error && (
