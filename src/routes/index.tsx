@@ -2530,33 +2530,6 @@ function Locker({ setTab }: { setTab: (t: TabKey) => void }) {
           );
         })}
       </div>
-
-      <SectionTitle>Home timeline</SectionTitle>
-      <ol className="space-y-0">
-        {TIMELINE.map((t, i) => {
-          const dotColor =
-            t.dot === "ok" ? "bg-ok" : t.dot === "warn" ? "bg-warn" : "bg-bad";
-          return (
-            <li key={i} className="flex gap-3 border-b border-border py-3 last:border-none">
-              <div className="flex w-3 flex-col items-center">
-                <span className={`h-2.5 w-2.5 rounded-full ${dotColor}`} />
-                {i < TIMELINE.length - 1 && <span className="mt-1 w-px flex-1 bg-border" />}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-[13px] font-medium">{t.title}</div>
-                <div className="mt-0.5 text-[11px] text-text-muted">{t.sub}</div>
-                {t.state === "upcoming" ? (
-                  <span className="mt-1 inline-block rounded bg-[oklch(0.95_0.06_75)] px-1.5 py-0.5 text-[11px] font-medium text-[oklch(0.4_0.1_70)]">
-                    {t.when}
-                  </span>
-                ) : (
-                  <span className="mt-1 inline-block text-[11px] text-text-muted">Completed</span>
-                )}
-              </div>
-            </li>
-          );
-        })}
-      </ol>
     </>
   );
 }
