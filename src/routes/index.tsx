@@ -2242,49 +2242,6 @@ function Scan() {
         </div>
       )}
 
-      <SectionTitle>AI valuation — current market value</SectionTitle>
-      <div className="space-y-2">
-        {ITEMS.slice(0, 3).map((item) => {
-          const Icon = item.icon;
-          const pct = Math.round((item.priceNow / item.pricePaid) * 100);
-          const dep = Math.round(100 - pct);
-          const fill =
-            item.depreciationTone === "ok"
-              ? "bg-ok"
-              : item.depreciationTone === "warn"
-              ? "bg-warn"
-              : "bg-bad";
-          return (
-            <div
-              key={item.id}
-              className="flex gap-3 rounded-xl border border-border bg-surface-2 p-3.5"
-            >
-              <div
-                className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${ICON_TONE[item.iconTone]}`}
-              >
-                <Icon className="h-5 w-5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-[13px] font-medium">{item.name}</div>
-                <div className="text-[11px] text-text-muted">
-                  Bought {inr(item.pricePaid)} · {item.purchasedAt}
-                </div>
-                <div className="mt-2">
-                  <div className="mb-1 h-1.5 overflow-hidden rounded-full bg-surface-1">
-                    <div className={`h-full rounded-full ${fill}`} style={{ width: `${pct}%` }} />
-                  </div>
-                  <div className="flex justify-between text-[11px]">
-                    <span className="font-medium text-[oklch(0.36_0.13_255)]">
-                      {inr(item.priceNow)} today
-                    </span>
-                    <span className="text-bad">−{dep}% depreciation</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
     </>
   );
 }
