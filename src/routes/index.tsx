@@ -70,6 +70,7 @@ import {
   Copy,
   Printer,
   FileDown,
+  ChevronDown,
 
   type LucideIcon,
 } from "lucide-react";
