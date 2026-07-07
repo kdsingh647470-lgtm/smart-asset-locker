@@ -742,7 +742,7 @@ function Dashboard({ setTab }: { setTab: (t: TabKey) => void }) {
 
       <ServiceMarketplace items={itemsQ.data ?? []} />
 
-      <MaintenanceCalendar items={itemsQ.data ?? []} />
+
 
       <SectionTitle>Quick actions</SectionTitle>
       <div className="grid grid-cols-4 gap-2">
