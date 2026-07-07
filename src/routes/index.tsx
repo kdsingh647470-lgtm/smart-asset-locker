@@ -358,6 +358,9 @@ function ProfileSheet({
   onClose: () => void;
 }) {
   const [familyOpen, setFamilyOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [timelineOpen, setTimelineOpen] = useState(false);
+  const itemsQ = useQuery({ queryKey: ["items"], queryFn: listItems });
   const joined = createdAt ? new Date(createdAt).toLocaleDateString("en-IN", { year: "numeric", month: "short", day: "numeric" }) : null;
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50" onClick={onClose}>
