@@ -456,6 +456,16 @@ function ProfileSheet({
         </div>
       </div>
       {familyOpen && <FamilySheet onClose={() => setFamilyOpen(false)} />}
+      {calendarOpen && (
+        <SectionSheet title="Maintenance calendar" onClose={() => setCalendarOpen(false)}>
+          <MaintenanceCalendar items={itemsQ.data ?? []} />
+        </SectionSheet>
+      )}
+      {timelineOpen && (
+        <SectionSheet title="Home timeline" onClose={() => setTimelineOpen(false)}>
+          <HomeTimeline />
+        </SectionSheet>
+      )}
     </div>
   );
 }
