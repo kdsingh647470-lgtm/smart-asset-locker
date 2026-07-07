@@ -197,6 +197,7 @@ function GharLogApp() {
             unread={unread}
           />
           <TabBar tab={tab} setTab={setTab} />
+          <AdBanner />
           <main
             className="flex-1 px-4 pb-24 pt-4"
             onTouchStart={(e) => {
