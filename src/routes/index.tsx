@@ -71,6 +71,7 @@ import {
   Printer,
   FileDown,
   ChevronDown,
+  CalendarDays,
 
   type LucideIcon,
 } from "lucide-react";
@@ -357,6 +358,9 @@ function ProfileSheet({
   onClose: () => void;
 }) {
   const [familyOpen, setFamilyOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [timelineOpen, setTimelineOpen] = useState(false);
+  const itemsQ = useQuery({ queryKey: ["items"], queryFn: listItems });
   const joined = createdAt ? new Date(createdAt).toLocaleDateString("en-IN", { year: "numeric", month: "short", day: "numeric" }) : null;
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50" onClick={onClose}>
@@ -406,6 +410,31 @@ function ProfileSheet({
           <span className="text-[11px] text-text-muted">Invite &amp; manage</span>
         </button>
 
+        <button
+          type="button"
+          onClick={() => setCalendarOpen(true)}
+          className="mt-2 flex w-full items-center justify-between rounded-lg border border-border bg-surface-1 px-3 py-2.5 text-left text-sm"
+        >
+          <span className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-brand" />
+            <span className="font-medium">Maintenance calendar</span>
+          </span>
+          <span className="text-[11px] text-text-muted">Yearly plan</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setTimelineOpen(true)}
+          className="mt-2 flex w-full items-center justify-between rounded-lg border border-border bg-surface-1 px-3 py-2.5 text-left text-sm"
+        >
+          <span className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-brand" />
+            <span className="font-medium">Home timeline</span>
+          </span>
+          <span className="text-[11px] text-text-muted">Recent &amp; upcoming</span>
+        </button>
+
+
         <div className="mt-4 flex gap-2">
           <button
             type="button"
@@ -427,9 +456,83 @@ function ProfileSheet({
         </div>
       </div>
       {familyOpen && <FamilySheet onClose={() => setFamilyOpen(false)} />}
+      {calendarOpen && (
+        <SectionSheet title="Maintenance calendar" onClose={() => setCalendarOpen(false)}>
+          <MaintenanceCalendar items={itemsQ.data ?? []} />
+        </SectionSheet>
+      )}
+      {timelineOpen && (
+        <SectionSheet title="Home timeline" onClose={() => setTimelineOpen(false)}>
+          <HomeTimeline />
+        </SectionSheet>
+      )}
     </div>
   );
 }
+
+
+function SectionSheet({
+  title,
+  onClose,
+  children,
+}: {
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/50" onClick={onClose}>
+      <div
+        className="flex max-h-[85vh] w-full max-w-[480px] flex-col rounded-t-2xl bg-surface-0 text-text-primary shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <h3 className="text-sm font-semibold">{title}</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md px-2 py-1 text-xs text-text-muted hover:bg-surface-1"
+          >
+            Close
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function HomeTimeline() {
+  return (
+    <ol className="space-y-0">
+      {TIMELINE.map((t, i) => {
+        const dotColor =
+          t.dot === "ok" ? "bg-ok" : t.dot === "warn" ? "bg-warn" : "bg-bad";
+        return (
+          <li key={i} className="flex gap-3 border-b border-border py-3 last:border-none">
+            <div className="flex w-3 flex-col items-center">
+              <span className={`h-2.5 w-2.5 rounded-full ${dotColor}`} />
+              {i < TIMELINE.length - 1 && <span className="mt-1 w-px flex-1 bg-border" />}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[13px] font-medium">{t.title}</div>
+              <div className="mt-0.5 text-[11px] text-text-muted">{t.sub}</div>
+              {t.state === "upcoming" ? (
+                <span className="mt-1 inline-block rounded bg-[oklch(0.95_0.06_75)] px-1.5 py-0.5 text-[11px] font-medium text-[oklch(0.4_0.1_70)]">
+                  {t.when}
+                </span>
+              ) : (
+                <span className="mt-1 inline-block text-[11px] text-text-muted">Completed</span>
+              )}
+            </div>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+
 
 
 function NotificationsSheet({
@@ -703,7 +806,7 @@ function Dashboard({ setTab }: { setTab: (t: TabKey) => void }) {
 
       <ServiceMarketplace items={itemsQ.data ?? []} />
 
-      <MaintenanceCalendar items={itemsQ.data ?? []} />
+
 
       <SectionTitle>Quick actions</SectionTitle>
       <div className="grid grid-cols-4 gap-2">
@@ -2491,33 +2594,6 @@ function Locker({ setTab }: { setTab: (t: TabKey) => void }) {
           );
         })}
       </div>
-
-      <SectionTitle>Home timeline</SectionTitle>
-      <ol className="space-y-0">
-        {TIMELINE.map((t, i) => {
-          const dotColor =
-            t.dot === "ok" ? "bg-ok" : t.dot === "warn" ? "bg-warn" : "bg-bad";
-          return (
-            <li key={i} className="flex gap-3 border-b border-border py-3 last:border-none">
-              <div className="flex w-3 flex-col items-center">
-                <span className={`h-2.5 w-2.5 rounded-full ${dotColor}`} />
-                {i < TIMELINE.length - 1 && <span className="mt-1 w-px flex-1 bg-border" />}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-[13px] font-medium">{t.title}</div>
-                <div className="mt-0.5 text-[11px] text-text-muted">{t.sub}</div>
-                {t.state === "upcoming" ? (
-                  <span className="mt-1 inline-block rounded bg-[oklch(0.95_0.06_75)] px-1.5 py-0.5 text-[11px] font-medium text-[oklch(0.4_0.1_70)]">
-                    {t.when}
-                  </span>
-                ) : (
-                  <span className="mt-1 inline-block text-[11px] text-text-muted">Completed</span>
-                )}
-              </div>
-            </li>
-          );
-        })}
-      </ol>
     </>
   );
 }
