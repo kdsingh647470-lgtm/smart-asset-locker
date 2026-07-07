@@ -197,6 +197,7 @@ function GharLogApp() {
             unread={unread}
           />
           <TabBar tab={tab} setTab={setTab} />
+          <AdBanner />
           <main
             className="flex-1 px-4 pb-24 pt-4"
             onTouchStart={(e) => {
@@ -3677,6 +3678,32 @@ function AdRail({ side }: { side: "left" | "right" }) {
           <div className="flex h-full flex-col items-center justify-center gap-1 px-3 text-center">
             <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[10px] uppercase tracking-wide">Ad</span>
             <span className="mt-2 text-[11px]">Sponsored space</span>
+            <span className="text-[10px] opacity-70">Set VITE_ADSENSE_CLIENT to enable</span>
+          </div>
+        )}
+      </div>
+    </aside>
+  );
+}
+
+/* ------------------------- MOBILE AD BANNER ------------------------- */
+function AdBanner() {
+  const client =
+    (typeof window !== "undefined" && (window as unknown as { __ADSENSE_CLIENT__?: string }).__ADSENSE_CLIENT__) ||
+    (import.meta.env.VITE_ADSENSE_CLIENT as string | undefined);
+  const slot = import.meta.env.VITE_ADSENSE_SLOT_MOBILE as string | undefined;
+  return (
+    <aside
+      className="lg:hidden w-full px-4 pt-3 pb-1"
+      aria-label="Sponsored banner"
+    >
+      <div className="mx-auto flex h-[90px] w-full max-w-[480px] flex-col overflow-hidden rounded-lg border border-dashed border-border bg-surface-1 text-[11px] text-text-muted">
+        {client && slot ? (
+          <AdSlot client={client} slot={slot} />
+        ) : (
+          <div className="flex h-full flex-col items-center justify-center gap-1 px-3 text-center">
+            <span className="rounded-full bg-surface-2 px-2 py-0.5 text-[10px] uppercase tracking-wide">Ad</span>
+            <span className="text-[11px]">Sponsored space</span>
             <span className="text-[10px] opacity-70">Set VITE_ADSENSE_CLIENT to enable</span>
           </div>
         )}
