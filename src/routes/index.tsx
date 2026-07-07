@@ -2553,9 +2553,103 @@ function AIAssistant({ setTab }: { setTab: (t: TabKey) => void }) {
 
   const isDemo = (itemsQ.data ?? []).length === 0;
 
+  const valuationItems = (itemsQ.data ?? []).filter(
+    (i) => i.price_paid != null && i.price_now != null,
+  );
+
   return (
     <div className="flex h-[calc(100vh-180px)] flex-col">
       {isDemo && <DemoBanner setTab={setTab} />}
+
+      <details className="mb-3 rounded-xl border border-border bg-surface-1">
+        <summary className="flex cursor-pointer list-none items-center justify-between px-3.5 py-2.5 text-[12px] font-medium">
+          <span className="flex items-center gap-1.5">
+            <Sparkles className="h-3.5 w-3.5 text-accent-blue" />
+            AI valuation — current market value
+          </span>
+          <ChevronDown className="h-3.5 w-3.5 text-text-muted" />
+        </summary>
+        <div className="space-y-2 px-2.5 pb-2.5">
+          {isDemo
+            ? ITEMS.slice(0, 3).map((item) => {
+                const Icon = item.icon;
+                const pct = Math.round((item.priceNow / item.pricePaid) * 100);
+                const dep = Math.round(100 - pct);
+                const fill =
+                  item.depreciationTone === "ok"
+                    ? "bg-ok"
+                    : item.depreciationTone === "warn"
+                    ? "bg-warn"
+                    : "bg-bad";
+                return (
+                  <div
+                    key={item.id}
+                    className="flex gap-3 rounded-xl border border-border bg-surface-2 p-3"
+                  >
+                    <div
+                      className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl ${ICON_TONE[item.iconTone]}`}
+                    >
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-[12px] font-medium">{item.name}</div>
+                      <div className="text-[10px] text-text-muted">
+                        Bought {inr(item.pricePaid)} · {item.purchasedAt}
+                      </div>
+                      <div className="mt-1.5">
+                        <div className="mb-1 h-1.5 overflow-hidden rounded-full bg-surface-1">
+                          <div className={`h-full rounded-full ${fill}`} style={{ width: `${pct}%` }} />
+                        </div>
+                        <div className="flex justify-between text-[10px]">
+                          <span className="font-medium text-[oklch(0.36_0.13_255)]">
+                            {inr(item.priceNow)} today
+                          </span>
+                          <span className="text-bad">−{dep}% depreciation</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            : valuationItems.length === 0
+            ? (
+                <p className="px-1 py-2 text-[11px] text-text-muted">
+                  Add price paid and current value to items to see AI valuation.
+                </p>
+              )
+            : valuationItems.slice(0, 5).map((item) => {
+                const paid = Number(item.price_paid);
+                const now = Number(item.price_now);
+                const pct = paid > 0 ? Math.round((now / paid) * 100) : 0;
+                const dep = Math.max(0, 100 - pct);
+                const fill = dep < 20 ? "bg-ok" : dep < 45 ? "bg-warn" : "bg-bad";
+                return (
+                  <div
+                    key={item.id}
+                    className="rounded-xl border border-border bg-surface-2 p-3"
+                  >
+                    <div className="truncate text-[12px] font-medium">{item.name}</div>
+                    <div className="text-[10px] text-text-muted">
+                      Bought {inr(paid)}
+                      {item.brand ? ` · ${item.brand}` : ""}
+                    </div>
+                    <div className="mt-1.5">
+                      <div className="mb-1 h-1.5 overflow-hidden rounded-full bg-surface-1">
+                        <div className={`h-full rounded-full ${fill}`} style={{ width: `${Math.min(100, pct)}%` }} />
+                      </div>
+                      <div className="flex justify-between text-[10px]">
+                        <span className="font-medium text-[oklch(0.36_0.13_255)]">
+                          {inr(now)} today
+                        </span>
+                        <span className="text-bad">−{dep}% depreciation</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+        </div>
+      </details>
+
 
       <div className="mb-2 flex flex-wrap gap-1.5">
         {SUGGESTIONS.map((s) => (
