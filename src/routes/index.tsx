@@ -410,6 +410,31 @@ function ProfileSheet({
           <span className="text-[11px] text-text-muted">Invite &amp; manage</span>
         </button>
 
+        <button
+          type="button"
+          onClick={() => setCalendarOpen(true)}
+          className="mt-2 flex w-full items-center justify-between rounded-lg border border-border bg-surface-1 px-3 py-2.5 text-left text-sm"
+        >
+          <span className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-brand" />
+            <span className="font-medium">Maintenance calendar</span>
+          </span>
+          <span className="text-[11px] text-text-muted">Yearly plan</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setTimelineOpen(true)}
+          className="mt-2 flex w-full items-center justify-between rounded-lg border border-border bg-surface-1 px-3 py-2.5 text-left text-sm"
+        >
+          <span className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-brand" />
+            <span className="font-medium">Home timeline</span>
+          </span>
+          <span className="text-[11px] text-text-muted">Recent &amp; upcoming</span>
+        </button>
+
+
         <div className="mt-4 flex gap-2">
           <button
             type="button"
