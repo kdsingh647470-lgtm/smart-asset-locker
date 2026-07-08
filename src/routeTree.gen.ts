@@ -18,6 +18,7 @@ import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as ApiScanInvoiceRouteImport } from './routes/api/scan-invoice'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as ApiPublicSendDueRemindersRouteImport } from './routes/api/public/send-due-reminders'
+import { Route as ApiPublicRazorpayWebhookRouteImport } from './routes/api/public/razorpay-webhook'
 import { Route as ApiPublicFirebaseConfigRouteImport } from './routes/api/public/firebase-config'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -67,6 +68,12 @@ const ApiPublicSendDueRemindersRoute =
     path: '/api/public/send-due-reminders',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicRazorpayWebhookRoute =
+  ApiPublicRazorpayWebhookRouteImport.update({
+    id: '/api/public/razorpay-webhook',
+    path: '/api/public/razorpay-webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicFirebaseConfigRoute = ApiPublicFirebaseConfigRouteImport.update({
   id: '/api/public/firebase-config',
   path: '/api/public/firebase-config',
@@ -83,6 +90,7 @@ export interface FileRoutesByFullPath {
   '/api/scan-invoice': typeof ApiScanInvoiceRoute
   '/invite/$token': typeof InviteTokenRoute
   '/api/public/firebase-config': typeof ApiPublicFirebaseConfigRoute
+  '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
   '/api/public/send-due-reminders': typeof ApiPublicSendDueRemindersRoute
 }
 export interface FileRoutesByTo {
@@ -95,6 +103,7 @@ export interface FileRoutesByTo {
   '/api/scan-invoice': typeof ApiScanInvoiceRoute
   '/invite/$token': typeof InviteTokenRoute
   '/api/public/firebase-config': typeof ApiPublicFirebaseConfigRoute
+  '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
   '/api/public/send-due-reminders': typeof ApiPublicSendDueRemindersRoute
 }
 export interface FileRoutesById {
@@ -108,6 +117,7 @@ export interface FileRoutesById {
   '/api/scan-invoice': typeof ApiScanInvoiceRoute
   '/invite/$token': typeof InviteTokenRoute
   '/api/public/firebase-config': typeof ApiPublicFirebaseConfigRoute
+  '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
   '/api/public/send-due-reminders': typeof ApiPublicSendDueRemindersRoute
 }
 export interface FileRouteTypes {
@@ -122,6 +132,7 @@ export interface FileRouteTypes {
     | '/api/scan-invoice'
     | '/invite/$token'
     | '/api/public/firebase-config'
+    | '/api/public/razorpay-webhook'
     | '/api/public/send-due-reminders'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -134,6 +145,7 @@ export interface FileRouteTypes {
     | '/api/scan-invoice'
     | '/invite/$token'
     | '/api/public/firebase-config'
+    | '/api/public/razorpay-webhook'
     | '/api/public/send-due-reminders'
   id:
     | '__root__'
@@ -146,6 +158,7 @@ export interface FileRouteTypes {
     | '/api/scan-invoice'
     | '/invite/$token'
     | '/api/public/firebase-config'
+    | '/api/public/razorpay-webhook'
     | '/api/public/send-due-reminders'
   fileRoutesById: FileRoutesById
 }
@@ -159,6 +172,7 @@ export interface RootRouteChildren {
   ApiScanInvoiceRoute: typeof ApiScanInvoiceRoute
   InviteTokenRoute: typeof InviteTokenRoute
   ApiPublicFirebaseConfigRoute: typeof ApiPublicFirebaseConfigRoute
+  ApiPublicRazorpayWebhookRoute: typeof ApiPublicRazorpayWebhookRoute
   ApiPublicSendDueRemindersRoute: typeof ApiPublicSendDueRemindersRoute
 }
 
@@ -227,6 +241,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSendDueRemindersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/razorpay-webhook': {
+      id: '/api/public/razorpay-webhook'
+      path: '/api/public/razorpay-webhook'
+      fullPath: '/api/public/razorpay-webhook'
+      preLoaderRoute: typeof ApiPublicRazorpayWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/firebase-config': {
       id: '/api/public/firebase-config'
       path: '/api/public/firebase-config'
@@ -247,18 +268,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiScanInvoiceRoute: ApiScanInvoiceRoute,
   InviteTokenRoute: InviteTokenRoute,
   ApiPublicFirebaseConfigRoute: ApiPublicFirebaseConfigRoute,
+  ApiPublicRazorpayWebhookRoute: ApiPublicRazorpayWebhookRoute,
   ApiPublicSendDueRemindersRoute: ApiPublicSendDueRemindersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

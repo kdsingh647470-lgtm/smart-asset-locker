@@ -27,6 +27,7 @@ import {
 } from "@/lib/maintenance-api";
 import { buildReminders } from "@/lib/reminders";
 import { getMyPlan, redeemProCode } from "@/lib/plan.functions";
+import { createRazorpayProOrder } from "@/lib/razorpay.functions";
 import { listMyNotifications, markAllRead, type AppNotification } from "@/lib/notifications.functions";
 import { toast } from "sonner";
 import {
@@ -2964,62 +2965,182 @@ function Insurance({ setTab }: { setTab: (t: TabKey) => void }) {
       </div>
 
       {promoOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center"
-          onClick={() => setPromoOpen(false)}
-        >
-          <div
-            className="w-full max-w-sm rounded-t-2xl bg-surface-1 p-4 sm:rounded-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-1 flex items-center gap-2">
-              <Crown className="h-4 w-4 text-[oklch(0.78_0.14_85)]" />
-              <h3 className="text-[15px] font-medium">Unlock Pro</h3>
-            </div>
-            <p className="mb-3 text-[12px] text-text-muted">
-              Enter the promo code you received to activate Pro features on this account.
-            </p>
-            <input
-              autoFocus
-              value={promoCode}
-              onChange={(e) => setPromoCode(e.target.value)}
-              placeholder="Promo code"
-              className="w-full rounded-xl border border-border bg-surface-2 px-3 py-2.5 text-[13px] uppercase tracking-wide outline-none focus:border-accent-blue"
-            />
-            {promoMsg && (
-              <div
-                className={`mt-2 rounded-md px-2.5 py-2 text-[11px] ${
-                  promoMsg.ok
-                    ? "bg-[oklch(0.95_0.05_150)] text-[oklch(0.38_0.13_150)]"
-                    : "bg-[oklch(0.96_0.04_25)] text-[oklch(0.42_0.15_25)]"
-                }`}
-              >
-                {promoMsg.text}
-              </div>
-            )}
-            <div className="mt-3 flex items-center justify-end gap-2">
-              <button
-                type="button"
-                className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-[12px]"
-                onClick={() => setPromoOpen(false)}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                disabled={!promoCode.trim() || redeem.isPending}
-                onClick={() => redeem.mutate(promoCode.trim())}
-                className="rounded-lg bg-brand px-3 py-2 text-[12px] font-medium text-brand-foreground disabled:opacity-60"
-              >
-                {redeem.isPending ? "Checking…" : "Redeem"}
-              </button>
-            </div>
-          </div>
-        </div>
+        <UpgradeModal
+          onClose={() => setPromoOpen(false)}
+          onProActivated={() => {
+            qc.invalidateQueries({ queryKey: ["my-plan"] });
+            setTimeout(() => setPromoOpen(false), 1200);
+          }}
+          promoCode={promoCode}
+          setPromoCode={setPromoCode}
+          promoMsg={promoMsg}
+          setPromoMsg={setPromoMsg}
+          onRedeem={() => redeem.mutate(promoCode.trim())}
+          redeemPending={redeem.isPending}
+        />
       )}
 
       {reportOpen && <InsuranceReport items={itemsQ.data ?? []} onClose={() => setReportOpen(false)} />}
     </>
+  );
+}
+
+function UpgradeModal({
+  onClose,
+  onProActivated,
+  promoCode,
+  setPromoCode,
+  promoMsg,
+  setPromoMsg,
+  onRedeem,
+  redeemPending,
+}: {
+  onClose: () => void;
+  onProActivated: () => void;
+  promoCode: string;
+  setPromoCode: (v: string) => void;
+  promoMsg: { ok: boolean; text: string } | null;
+  setPromoMsg: (v: { ok: boolean; text: string } | null) => void;
+  onRedeem: () => void;
+  redeemPending: boolean;
+}) {
+  const [paying, setPaying] = useState(false);
+  const [payMsg, setPayMsg] = useState<string | null>(null);
+  const qc = useQueryClient();
+
+  async function loadRzp(): Promise<boolean> {
+    if (typeof window === "undefined") return false;
+    if ((window as any).Razorpay) return true;
+    return new Promise((resolve) => {
+      const s = document.createElement("script");
+      s.src = "https://checkout.razorpay.com/v1/checkout.js";
+      s.onload = () => resolve(true);
+      s.onerror = () => resolve(false);
+      document.body.appendChild(s);
+    });
+  }
+
+  async function payNow() {
+    setPayMsg(null);
+    setPaying(true);
+    try {
+      const ok = await loadRzp();
+      if (!ok) throw new Error("Could not load Razorpay. Check your connection.");
+      const order = await createRazorpayProOrder();
+      const rzp = new (window as any).Razorpay({
+        key: order.keyId,
+        order_id: order.orderId,
+        amount: order.amount,
+        currency: order.currency,
+        name: "GharLog Pro",
+        description: "Pro plan — 1 year",
+        prefill: order.userEmail ? { email: order.userEmail } : undefined,
+        theme: { color: "#0f766e" },
+        handler: () => {
+          // Payment succeeded on client. Webhook activates Pro server-side.
+          setPayMsg("Payment received — activating Pro…");
+          // Poll plan a few times.
+          let tries = 0;
+          const t = setInterval(async () => {
+            tries++;
+            await qc.invalidateQueries({ queryKey: ["my-plan"] });
+            const fresh = qc.getQueryData<{ plan: string }>(["my-plan"]);
+            if (fresh?.plan === "pro" || tries > 10) {
+              clearInterval(t);
+              if (fresh?.plan === "pro") onProActivated();
+              else setPayMsg("Payment received. Pro will activate shortly — refresh in a moment.");
+            }
+          }, 1500);
+        },
+        modal: { ondismiss: () => setPaying(false) },
+      });
+      rzp.on("payment.failed", (e: any) => {
+        setPayMsg(e?.error?.description ?? "Payment failed");
+        setPaying(false);
+      });
+      rzp.open();
+    } catch (e: any) {
+      setPayMsg(e?.message ?? "Something went wrong");
+      setPaying(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-sm rounded-t-2xl bg-surface-1 p-4 sm:rounded-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-1 flex items-center gap-2">
+          <Crown className="h-4 w-4 text-[oklch(0.78_0.14_85)]" />
+          <h3 className="text-[15px] font-medium">Unlock Pro</h3>
+        </div>
+        <p className="mb-3 text-[12px] text-text-muted">
+          ₹999 / year. Unlimited items, AI scanner, insurance reports & family sharing.
+        </p>
+
+        <button
+          type="button"
+          disabled={paying}
+          onClick={payNow}
+          className="w-full rounded-xl bg-brand px-3 py-2.5 text-[13px] font-medium text-brand-foreground disabled:opacity-60"
+        >
+          {paying ? "Processing…" : "Pay ₹999 with Razorpay"}
+        </button>
+        {payMsg && (
+          <div className="mt-2 rounded-md bg-surface-2 px-2.5 py-2 text-[11px] text-text-secondary">
+            {payMsg}
+          </div>
+        )}
+
+        <div className="my-3 flex items-center gap-2 text-[10px] uppercase tracking-wide text-text-muted">
+          <div className="h-px flex-1 bg-border" />
+          or use promo code
+          <div className="h-px flex-1 bg-border" />
+        </div>
+
+        <input
+          value={promoCode}
+          onChange={(e) => {
+            setPromoCode(e.target.value);
+            setPromoMsg(null);
+          }}
+          placeholder="Promo code"
+          className="w-full rounded-xl border border-border bg-surface-2 px-3 py-2.5 text-[13px] uppercase tracking-wide outline-none focus:border-accent-blue"
+        />
+        {promoMsg && (
+          <div
+            className={`mt-2 rounded-md px-2.5 py-2 text-[11px] ${
+              promoMsg.ok
+                ? "bg-[oklch(0.95_0.05_150)] text-[oklch(0.38_0.13_150)]"
+                : "bg-[oklch(0.96_0.04_25)] text-[oklch(0.42_0.15_25)]"
+            }`}
+          >
+            {promoMsg.text}
+          </div>
+        )}
+        <div className="mt-3 flex items-center justify-end gap-2">
+          <button
+            type="button"
+            className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-[12px]"
+            onClick={onClose}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={!promoCode.trim() || redeemPending}
+            onClick={onRedeem}
+            className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-[12px] font-medium disabled:opacity-60"
+          >
+            {redeemPending ? "Checking…" : "Redeem code"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
