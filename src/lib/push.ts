@@ -55,21 +55,50 @@ export type PushResult =
   | { status: "unsupported"; reason: string };
 
 export async function enablePushNotifications(): Promise<PushResult> {
+  console.log("[push] enable requested");
   if (typeof window === "undefined") return { status: "unsupported", reason: "no window" };
   if (!("serviceWorker" in navigator)) return { status: "unsupported", reason: "no service worker" };
   if (!("Notification" in window)) return { status: "unsupported", reason: "no Notification API" };
 
+  // Lovable editor preview runs the app inside an iframe on a different origin.
+  // Browsers block Notification.requestPermission() and service worker registration
+  // in that context — the click appears to do nothing.
+  if (window.top !== window.self) {
+    return {
+      status: "unsupported",
+      reason: "Open the published app in its own tab (not the editor preview) to enable push.",
+    };
+  }
+
+  if (!window.isSecureContext) {
+    return { status: "unsupported", reason: "Push requires HTTPS." };
+  }
+
+  if (Notification.permission === "denied") {
+    console.log("[push] permission previously denied");
+    return { status: "denied" };
+  }
+
   const cfg = await loadConfig();
+  console.log("[push] config loaded?", !!cfg);
   if (!cfg) return { status: "unsupported", reason: "Push not configured yet" };
 
   const supported = await isSupported().catch(() => false);
-  if (!supported) return { status: "unsupported", reason: "browser unsupported" };
+  console.log("[push] fcm supported?", supported);
+  if (!supported) {
+    return {
+      status: "unsupported",
+      reason: "This browser doesn't support web push (iOS Safari needs iOS 16.4+ and Add to Home Screen first).",
+    };
+  }
 
   const permission = await Notification.requestPermission();
+  console.log("[push] permission result:", permission);
   if (permission !== "granted") return { status: "denied" };
 
   const reg = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
   await navigator.serviceWorker.ready;
+  console.log("[push] SW registered", reg.scope);
 
   const app = ensureApp(cfg);
   const messaging = getMessaging(app);
@@ -77,6 +106,7 @@ export async function enablePushNotifications(): Promise<PushResult> {
     vapidKey: cfg.vapidKey,
     serviceWorkerRegistration: reg,
   });
+  console.log("[push] token?", token ? token.slice(0, 12) + "…" : null);
   if (!token) return { status: "unsupported", reason: "no token returned" };
 
   await saveDeviceToken({
@@ -86,6 +116,7 @@ export async function enablePushNotifications(): Promise<PushResult> {
       user_agent: navigator.userAgent.slice(0, 512),
     },
   });
+  console.log("[push] token saved to server");
 
   return { status: "ok", token };
 }
