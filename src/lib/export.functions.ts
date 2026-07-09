@@ -3,7 +3,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export const exportMyData = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .handler(async ({ context }): Promise<{ json: string }> => {
     const { supabase, userId, claims } = context;
 
     const tables = [
@@ -35,5 +35,5 @@ export const exportMyData = createServerFn({ method: "POST" })
       }
     }
 
-    return out;
+    return { json: JSON.stringify(out, null, 2) };
   });
