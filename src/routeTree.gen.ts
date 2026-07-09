@@ -9,8 +9,10 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as FirebaseMessagingSwDotjsRouteImport } from './routes/firebase-messaging-sw[.]js'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -18,10 +20,16 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as ApiScanInvoiceRouteImport } from './routes/api/scan-invoice'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
+import { Route as AccountDeleteRouteImport } from './routes/account.delete'
 import { Route as ApiPublicSendDueRemindersRouteImport } from './routes/api/public/send-due-reminders'
 import { Route as ApiPublicRazorpayWebhookRouteImport } from './routes/api/public/razorpay-webhook'
 import { Route as ApiPublicFirebaseConfigRouteImport } from './routes/api/public/firebase-config'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
@@ -30,6 +38,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -68,6 +81,11 @@ const ApiChatRoute = ApiChatRouteImport.update({
   path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AccountDeleteRoute = AccountDeleteRouteImport.update({
+  id: '/account/delete',
+  path: '/account/delete',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicSendDueRemindersRoute =
   ApiPublicSendDueRemindersRouteImport.update({
     id: '/api/public/send-due-reminders',
@@ -91,8 +109,11 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/firebase-messaging-sw.js': typeof FirebaseMessagingSwDotjsRoute
   '/onboarding': typeof OnboardingRoute
+  '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/terms': typeof TermsRoute
+  '/account/delete': typeof AccountDeleteRoute
   '/api/chat': typeof ApiChatRoute
   '/api/scan-invoice': typeof ApiScanInvoiceRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -105,8 +126,11 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/firebase-messaging-sw.js': typeof FirebaseMessagingSwDotjsRoute
   '/onboarding': typeof OnboardingRoute
+  '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/terms': typeof TermsRoute
+  '/account/delete': typeof AccountDeleteRoute
   '/api/chat': typeof ApiChatRoute
   '/api/scan-invoice': typeof ApiScanInvoiceRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -120,8 +144,11 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/firebase-messaging-sw.js': typeof FirebaseMessagingSwDotjsRoute
   '/onboarding': typeof OnboardingRoute
+  '/privacy': typeof PrivacyRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/terms': typeof TermsRoute
+  '/account/delete': typeof AccountDeleteRoute
   '/api/chat': typeof ApiChatRoute
   '/api/scan-invoice': typeof ApiScanInvoiceRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -136,8 +163,11 @@ export interface FileRouteTypes {
     | '/auth'
     | '/firebase-messaging-sw.js'
     | '/onboarding'
+    | '/privacy'
     | '/reset-password'
     | '/sitemap.xml'
+    | '/terms'
+    | '/account/delete'
     | '/api/chat'
     | '/api/scan-invoice'
     | '/invite/$token'
@@ -150,8 +180,11 @@ export interface FileRouteTypes {
     | '/auth'
     | '/firebase-messaging-sw.js'
     | '/onboarding'
+    | '/privacy'
     | '/reset-password'
     | '/sitemap.xml'
+    | '/terms'
+    | '/account/delete'
     | '/api/chat'
     | '/api/scan-invoice'
     | '/invite/$token'
@@ -164,8 +197,11 @@ export interface FileRouteTypes {
     | '/auth'
     | '/firebase-messaging-sw.js'
     | '/onboarding'
+    | '/privacy'
     | '/reset-password'
     | '/sitemap.xml'
+    | '/terms'
+    | '/account/delete'
     | '/api/chat'
     | '/api/scan-invoice'
     | '/invite/$token'
@@ -179,8 +215,11 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   FirebaseMessagingSwDotjsRoute: typeof FirebaseMessagingSwDotjsRoute
   OnboardingRoute: typeof OnboardingRoute
+  PrivacyRoute: typeof PrivacyRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  TermsRoute: typeof TermsRoute
+  AccountDeleteRoute: typeof AccountDeleteRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiScanInvoiceRoute: typeof ApiScanInvoiceRoute
   InviteTokenRoute: typeof InviteTokenRoute
@@ -191,6 +230,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sitemap.xml': {
       id: '/sitemap.xml'
       path: '/sitemap.xml'
@@ -203,6 +249,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding': {
@@ -254,6 +307,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/account/delete': {
+      id: '/account/delete'
+      path: '/account/delete'
+      fullPath: '/account/delete'
+      preLoaderRoute: typeof AccountDeleteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/send-due-reminders': {
       id: '/api/public/send-due-reminders'
       path: '/api/public/send-due-reminders'
@@ -283,8 +343,11 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   FirebaseMessagingSwDotjsRoute: FirebaseMessagingSwDotjsRoute,
   OnboardingRoute: OnboardingRoute,
+  PrivacyRoute: PrivacyRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  TermsRoute: TermsRoute,
+  AccountDeleteRoute: AccountDeleteRoute,
   ApiChatRoute: ApiChatRoute,
   ApiScanInvoiceRoute: ApiScanInvoiceRoute,
   InviteTokenRoute: InviteTokenRoute,
