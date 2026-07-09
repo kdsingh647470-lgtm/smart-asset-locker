@@ -15,6 +15,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as FirebaseMessagingSwDotjsRouteImport } from './routes/firebase-messaging-sw[.]js'
+import { Route as DataSafetyRouteImport } from './routes/data-safety'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
@@ -56,6 +57,11 @@ const FirebaseMessagingSwDotjsRoute =
     path: '/firebase-messaging-sw.js',
     getParentRoute: () => rootRouteImport,
   } as any)
+const DataSafetyRoute = DataSafetyRouteImport.update({
+  id: '/data-safety',
+  path: '/data-safety',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -107,6 +113,7 @@ const ApiPublicFirebaseConfigRoute = ApiPublicFirebaseConfigRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/data-safety': typeof DataSafetyRoute
   '/firebase-messaging-sw.js': typeof FirebaseMessagingSwDotjsRoute
   '/onboarding': typeof OnboardingRoute
   '/privacy': typeof PrivacyRoute
@@ -124,6 +131,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/data-safety': typeof DataSafetyRoute
   '/firebase-messaging-sw.js': typeof FirebaseMessagingSwDotjsRoute
   '/onboarding': typeof OnboardingRoute
   '/privacy': typeof PrivacyRoute
@@ -142,6 +150,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/data-safety': typeof DataSafetyRoute
   '/firebase-messaging-sw.js': typeof FirebaseMessagingSwDotjsRoute
   '/onboarding': typeof OnboardingRoute
   '/privacy': typeof PrivacyRoute
@@ -161,6 +170,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/data-safety'
     | '/firebase-messaging-sw.js'
     | '/onboarding'
     | '/privacy'
@@ -178,6 +188,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/data-safety'
     | '/firebase-messaging-sw.js'
     | '/onboarding'
     | '/privacy'
@@ -195,6 +206,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/auth'
+    | '/data-safety'
     | '/firebase-messaging-sw.js'
     | '/onboarding'
     | '/privacy'
@@ -213,6 +225,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
+  DataSafetyRoute: typeof DataSafetyRoute
   FirebaseMessagingSwDotjsRoute: typeof FirebaseMessagingSwDotjsRoute
   OnboardingRoute: typeof OnboardingRoute
   PrivacyRoute: typeof PrivacyRoute
@@ -270,6 +283,13 @@ declare module '@tanstack/react-router' {
       path: '/firebase-messaging-sw.js'
       fullPath: '/firebase-messaging-sw.js'
       preLoaderRoute: typeof FirebaseMessagingSwDotjsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/data-safety': {
+      id: '/data-safety'
+      path: '/data-safety'
+      fullPath: '/data-safety'
+      preLoaderRoute: typeof DataSafetyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -341,6 +361,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
+  DataSafetyRoute: DataSafetyRoute,
   FirebaseMessagingSwDotjsRoute: FirebaseMessagingSwDotjsRoute,
   OnboardingRoute: OnboardingRoute,
   PrivacyRoute: PrivacyRoute,

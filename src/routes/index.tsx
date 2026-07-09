@@ -30,6 +30,8 @@ import { getMyPlan, redeemProCode } from "@/lib/plan.functions";
 import { createRazorpayProOrder } from "@/lib/razorpay.functions";
 import { listMyNotifications, markAllRead, type AppNotification } from "@/lib/notifications.functions";
 import { toast } from "sonner";
+import { EmailVerifyBanner } from "@/components/EmailVerifyBanner";
+import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
 import {
   HomeIcon,
   Box,
@@ -198,6 +200,7 @@ function GharLogApp() {
             unread={unread}
           />
           <TabBar tab={tab} setTab={setTab} />
+          <EmailVerifyBanner />
           <AdBanner />
           <main
             className="flex-1 px-4 pb-24 pt-4"
@@ -238,6 +241,7 @@ function GharLogApp() {
         </div>
         <AdRail side="right" />
       </div>
+      <PwaInstallPrompt />
     </div>
   );
 }
@@ -441,6 +445,8 @@ function ProfileSheet({
           <Link to="/privacy" onClick={onClose} className="hover:text-text-secondary">Privacy</Link>
           <span aria-hidden>·</span>
           <Link to="/terms" onClick={onClose} className="hover:text-text-secondary">Terms</Link>
+          <span aria-hidden>·</span>
+          <Link to="/data-safety" onClick={onClose} className="hover:text-text-secondary">Data safety</Link>
           <span aria-hidden>·</span>
           <Link to="/account/delete" onClick={onClose} className="text-[oklch(0.55_0.2_25)] hover:underline">Delete account</Link>
         </div>

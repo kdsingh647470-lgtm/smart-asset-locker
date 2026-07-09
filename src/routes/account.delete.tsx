@@ -1,10 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { AlertTriangle, Loader2, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { deleteMyAccount } from "@/lib/account.functions";
+import { exportMyData } from "@/lib/export.functions";
 
 export const Route = createFileRoute("/account/delete")({
   head: () => ({
@@ -21,9 +22,32 @@ function DeleteAccountPage() {
   const navigate = useNavigate();
   const { session, loading } = useAuth();
   const del = useServerFn(deleteMyAccount);
+  const doExport = useServerFn(exportMyData);
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  async function onExport() {
+    setErr(null);
+    setExporting(true);
+    try {
+      const { json } = await doExport();
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `gharlog-export-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Could not export data");
+    } finally {
+      setExporting(false);
+    }
+  }
 
   if (!loading && !session) {
     return (
@@ -68,8 +92,18 @@ function DeleteAccountPage() {
           <li>Your login (email/phone/Google/Apple)</li>
         </ul>
         <p className="mt-3 text-[12.5px] text-text-secondary">
-          This action cannot be undone. Export anything you need first.
+          This action cannot be undone. Export a copy of your data first.
         </p>
+
+        <button
+          type="button"
+          onClick={onExport}
+          disabled={exporting}
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-surface-1 px-4 py-2.5 text-[13px] font-medium text-text-primary hover:bg-surface-0 disabled:opacity-50"
+        >
+          {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          Export my data (JSON)
+        </button>
 
         <form onSubmit={onDelete} className="mt-5 space-y-3">
           <label className="block text-[11px] font-medium text-text-secondary">
