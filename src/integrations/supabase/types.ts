@@ -396,15 +396,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      household_edit_access: {
-        Args: { _owner: string; _viewer: string }
-        Returns: boolean
-      }
-      shares_household: {
-        Args: { _owner: string; _viewer: string }
-        Returns: boolean
-      }
-      user_household_ids: { Args: { _uid: string }; Returns: string[] }
+      [_ in never]: never
     }
     Enums: {
       doc_type: "invoice" | "warranty" | "insurance" | "manual" | "amc"
