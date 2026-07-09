@@ -756,12 +756,23 @@ function Dashboard({ setTab }: { setTab: (t: TabKey) => void }) {
   const itemsQ = useQuery({ queryKey: ["items"], queryFn: listItems });
   const items = itemsQ.data ?? [];
   const isDemo = items.length === 0;
+  const docsQ = useQuery({ queryKey: ["documents"], queryFn: listDocuments });
+  const tasksQ = useQuery({ queryKey: ["maint-tasks"], queryFn: listMaintTasks });
 
   const reminders = buildReminders(items);
   const attentionCount = reminders.length;
   const fallbackAlerts = ALERTS;
   return (
     <>
+      <OnboardingChecklist
+        hasItems={items.length > 0}
+        hasDocuments={(docsQ.data ?? []).length > 0}
+        hasTasks={(tasksQ.data ?? []).length > 0}
+        onAdd={() => setTab("inv")}
+        onScan={() => setTab("scan")}
+        onLocker={() => setTab("locker")}
+        onTasks={() => setTab("ins")}
+      />
       {isDemo && <DemoBanner setTab={setTab} />}
 
       {isDemo ? (
