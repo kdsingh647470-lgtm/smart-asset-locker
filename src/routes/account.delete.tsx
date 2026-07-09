@@ -92,8 +92,18 @@ function DeleteAccountPage() {
           <li>Your login (email/phone/Google/Apple)</li>
         </ul>
         <p className="mt-3 text-[12.5px] text-text-secondary">
-          This action cannot be undone. Export anything you need first.
+          This action cannot be undone. Export a copy of your data first.
         </p>
+
+        <button
+          type="button"
+          onClick={onExport}
+          disabled={exporting}
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-surface-1 px-4 py-2.5 text-[13px] font-medium text-text-primary hover:bg-surface-0 disabled:opacity-50"
+        >
+          {exporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+          Export my data (JSON)
+        </button>
 
         <form onSubmit={onDelete} className="mt-5 space-y-3">
           <label className="block text-[11px] font-medium text-text-secondary">
