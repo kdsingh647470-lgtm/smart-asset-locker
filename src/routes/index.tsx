@@ -3538,6 +3538,11 @@ function FamilySheet({ onClose }: { onClose: () => void }) {
                   <p className="mt-1.5 text-[10.5px] text-text-muted">
                     Creates a secure invite link, valid for 14 days. Share via WhatsApp, email or SMS.
                   </p>
+                  {invite.isError && (
+                    <p className="mt-2 rounded-md border border-bad/30 bg-bad/10 px-2 py-1.5 text-[11px] font-medium text-bad">
+                      {(invite.error as Error).message || "Could not create invite. Please try again."}
+                    </p>
+                  )}
                   {shareInvite && (
                     <div className="mt-3 rounded-lg border border-brand/40 bg-surface-2 p-3">
                       <div className="mb-2 flex items-start justify-between gap-2">
@@ -3562,7 +3567,7 @@ function FamilySheet({ onClose }: { onClose: () => void }) {
                           href={whatsappHref}
                           target="_blank"
                           rel="noreferrer"
-                          className="flex items-center justify-center gap-1.5 rounded-lg bg-good px-2 py-2 text-[11px] font-semibold text-white"
+                          className="flex items-center justify-center gap-1.5 rounded-lg border border-ok bg-ok/15 px-2 py-2 text-[11px] font-semibold text-text-primary"
                         >
                           <MessageCircle className="h-3.5 w-3.5" />
                           WhatsApp
