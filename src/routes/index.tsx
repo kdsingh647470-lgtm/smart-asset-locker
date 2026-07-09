@@ -444,6 +444,13 @@ function ProfileSheet({
           <span className="text-[11px] text-text-muted">Recent &amp; upcoming</span>
         </button>
 
+        <div className="mt-3">
+          <p className="mb-1 text-[11px] font-medium text-text-secondary">Appearance</p>
+          <ThemeToggle />
+        </div>
+
+
+
 
         <div className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-text-muted">
           <Link to="/support" onClick={onClose} className="hover:text-text-secondary">Support</Link>
