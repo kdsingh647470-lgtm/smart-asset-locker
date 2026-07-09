@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as FirebaseMessagingSwDotjsRouteImport } from './routes/firebase-messaging-sw[.]js'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -24,6 +25,11 @@ import { Route as ApiPublicFirebaseConfigRouteImport } from './routes/api/public
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OnboardingRoute = OnboardingRouteImport.update({
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/firebase-messaging-sw.js': typeof FirebaseMessagingSwDotjsRoute
   '/onboarding': typeof OnboardingRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
   '/api/scan-invoice': typeof ApiScanInvoiceRoute
@@ -98,6 +105,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/firebase-messaging-sw.js': typeof FirebaseMessagingSwDotjsRoute
   '/onboarding': typeof OnboardingRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
   '/api/scan-invoice': typeof ApiScanInvoiceRoute
@@ -112,6 +120,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/firebase-messaging-sw.js': typeof FirebaseMessagingSwDotjsRoute
   '/onboarding': typeof OnboardingRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/api/chat': typeof ApiChatRoute
   '/api/scan-invoice': typeof ApiScanInvoiceRoute
@@ -127,6 +136,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/firebase-messaging-sw.js'
     | '/onboarding'
+    | '/reset-password'
     | '/sitemap.xml'
     | '/api/chat'
     | '/api/scan-invoice'
@@ -140,6 +150,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/firebase-messaging-sw.js'
     | '/onboarding'
+    | '/reset-password'
     | '/sitemap.xml'
     | '/api/chat'
     | '/api/scan-invoice'
@@ -153,6 +164,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/firebase-messaging-sw.js'
     | '/onboarding'
+    | '/reset-password'
     | '/sitemap.xml'
     | '/api/chat'
     | '/api/scan-invoice'
@@ -167,6 +179,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   FirebaseMessagingSwDotjsRoute: typeof FirebaseMessagingSwDotjsRoute
   OnboardingRoute: typeof OnboardingRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiScanInvoiceRoute: typeof ApiScanInvoiceRoute
@@ -183,6 +196,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/onboarding': {
@@ -263,6 +283,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   FirebaseMessagingSwDotjsRoute: FirebaseMessagingSwDotjsRoute,
   OnboardingRoute: OnboardingRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiChatRoute: ApiChatRoute,
   ApiScanInvoiceRoute: ApiScanInvoiceRoute,
@@ -274,13 +295,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
