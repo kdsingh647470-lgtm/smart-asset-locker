@@ -241,6 +241,7 @@ function GharLogApp() {
         </div>
         <AdRail side="right" />
       </div>
+      <PwaInstallPrompt />
     </div>
   );
 }
@@ -444,6 +445,8 @@ function ProfileSheet({
           <Link to="/privacy" onClick={onClose} className="hover:text-text-secondary">Privacy</Link>
           <span aria-hidden>·</span>
           <Link to="/terms" onClick={onClose} className="hover:text-text-secondary">Terms</Link>
+          <span aria-hidden>·</span>
+          <Link to="/data-safety" onClick={onClose} className="hover:text-text-secondary">Data safety</Link>
           <span aria-hidden>·</span>
           <Link to="/account/delete" onClick={onClose} className="text-[oklch(0.55_0.2_25)] hover:underline">Delete account</Link>
         </div>
