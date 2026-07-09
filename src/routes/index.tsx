@@ -3365,10 +3365,15 @@ function FamilySheet({ onClose }: { onClose: () => void }) {
         <div className="flex items-center justify-between border-b border-border bg-surface-1 px-4 py-3">
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-brand" />
-            <h3 className="text-[15px] font-medium">Family sharing</h3>
+            <h3 className="text-[15px] font-medium text-text-primary">Family sharing</h3>
           </div>
-          <button type="button" onClick={onClose} className="rounded-full bg-surface-2 px-3 py-1 text-[12px]">
-            Done
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface-2 text-text-primary shadow-sm hover:bg-surface-1"
+          >
+            <X className="h-4 w-4" />
           </button>
         </div>
 
@@ -3385,7 +3390,7 @@ function FamilySheet({ onClose }: { onClose: () => void }) {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Household name (e.g. Sharma Home)"
-                  className="flex-1 rounded-lg border border-border bg-surface-1 px-3 py-2 text-[13px] outline-none focus:border-accent-blue"
+                  className="flex-1 rounded-lg border border-border bg-surface-2 px-3 py-2 text-[13px] text-text-primary placeholder:text-text-muted outline-none focus:border-accent-blue"
                 />
                 <button
                   type="button"
@@ -3429,7 +3434,7 @@ function FamilySheet({ onClose }: { onClose: () => void }) {
                       const v = e.currentTarget.value.trim();
                       if (v && v !== active.name) rename.mutate({ id: active.id, name: v });
                     }}
-                    className="flex-1 rounded-md bg-transparent px-1 py-0.5 text-[14px] font-medium outline-none disabled:opacity-70 focus:bg-surface-2"
+                    className="flex-1 rounded-md bg-transparent px-1 py-0.5 text-[14px] font-medium text-text-primary outline-none disabled:opacity-70 focus:bg-surface-2"
                   />
                   <span className="text-[10px] uppercase tracking-wide text-text-muted">
                     {isOwner ? "Owner" : "Member"}
@@ -3490,12 +3495,12 @@ function FamilySheet({ onClose }: { onClose: () => void }) {
                       onChange={(e) => setInviteEmail(e.target.value)}
                       type="email"
                       placeholder="family@example.com"
-                      className="flex-1 rounded-lg border border-border bg-surface-2 px-3 py-2 text-[13px] outline-none focus:border-accent-blue"
+                      className="flex-1 rounded-lg border border-border bg-surface-2 px-3 py-2 text-[13px] text-text-primary placeholder:text-text-muted outline-none focus:border-accent-blue"
                     />
                     <select
                       value={inviteRole}
                       onChange={(e) => setInviteRole(e.target.value as HouseholdRole)}
-                      className="rounded-lg border border-border bg-surface-2 px-2 py-2 text-[12px]"
+                      className="rounded-lg border border-border bg-surface-2 px-2 py-2 text-[12px] text-text-primary"
                     >
                       <option value="viewer">Viewer</option>
                       <option value="editor">Editor</option>
