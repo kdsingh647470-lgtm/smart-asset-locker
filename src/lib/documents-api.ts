@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { compressImageFile } from "@/lib/image-compress";
 
 export type DocType = "invoice" | "warranty" | "insurance" | "manual" | "amc";
 
@@ -34,7 +35,8 @@ export async function uploadDocument(args: {
   file: File;
   extracted?: unknown;
 }): Promise<ItemDocument> {
-  const { userId, itemId, docType, file, extracted } = args;
+  const { userId, itemId, docType, extracted } = args;
+  const file = await compressImageFile(args.file);
   const safe = file.name.replace(/[^A-Za-z0-9._-]+/g, "_");
   const path = `${userId}/${itemId ?? "unlinked"}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}-${safe}`;
   const up = await supabase.storage
