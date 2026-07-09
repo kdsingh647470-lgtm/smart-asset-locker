@@ -22,9 +22,32 @@ function DeleteAccountPage() {
   const navigate = useNavigate();
   const { session, loading } = useAuth();
   const del = useServerFn(deleteMyAccount);
+  const doExport = useServerFn(exportMyData);
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  async function onExport() {
+    setErr(null);
+    setExporting(true);
+    try {
+      const { json } = await doExport();
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `gharlog-export-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Could not export data");
+    } finally {
+      setExporting(false);
+    }
+  }
 
   if (!loading && !session) {
     return (
