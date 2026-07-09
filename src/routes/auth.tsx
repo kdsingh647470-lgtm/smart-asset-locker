@@ -29,7 +29,7 @@ function AuthPage() {
   const navigate = useNavigate();
   const { session, loading } = useAuth();
   const [channel, setChannel] = useState<Channel>("email");
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<"signin" | "signup" | "forgot">("signin");
 
   // email
   const [email, setEmail] = useState("");
@@ -75,18 +75,53 @@ function AuthPage() {
     setBusy(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: { emailRedirectTo: `${window.location.origin}/` },
         });
         if (error) throw error;
+        // If email confirmation is required, no session is returned.
+        if (!data.session) {
+          setInfo(
+            `We sent a confirmation link to ${email}. Open it on this device to finish signing up.`,
+          );
+        }
+      } else if (mode === "forgot") {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (error) throw error;
+        setInfo(`If an account exists for ${email}, a password-reset link is on its way.`);
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Something went wrong");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resendConfirmation() {
+    if (!email) {
+      setErr("Enter your email above first.");
+      return;
+    }
+    setErr(null);
+    setInfo(null);
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email,
+        options: { emailRedirectTo: `${window.location.origin}/` },
+      });
+      if (error) throw error;
+      setInfo(`Confirmation email resent to ${email}.`);
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Could not resend email");
     } finally {
       setBusy(false);
     }
@@ -157,7 +192,9 @@ function AuthPage() {
               : "Sign in with mobile"
             : mode === "signin"
               ? "Welcome back"
-              : "Create your vault"}
+              : mode === "signup"
+                ? "Create your vault"
+                : "Reset your password"}
         </h2>
         <p className="mb-4 text-[12px] text-text-muted">
           {channel === "phone"
@@ -166,8 +203,11 @@ function AuthPage() {
               : "We'll text you a one-time password."
             : mode === "signin"
               ? "Sign in to access your encrypted home inventory."
-              : "Start tracking every asset, warranty and document."}
+              : mode === "signup"
+                ? "Start tracking every asset, warranty and document."
+                : "Enter your email — we'll send a reset link."}
         </p>
+
 
         {/* Google sign-in */}
         <button
@@ -251,23 +291,35 @@ function AuthPage() {
                 className="w-full rounded-lg border border-border bg-surface-0 px-3 py-2 text-[13px] outline-none focus:border-brand"
               />
             </div>
-            <div>
-              <label className="mb-1 block text-[11px] font-medium text-text-secondary">
-                Password
-              </label>
-              <input
-                type="password"
-                required
-                minLength={6}
-                autoComplete={mode === "signin" ? "current-password" : "new-password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-lg border border-border bg-surface-0 px-3 py-2 text-[13px] outline-none focus:border-brand"
-              />
-            </div>
+            {mode !== "forgot" && (
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-text-secondary">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  minLength={mode === "signup" ? 8 : 6}
+                  autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-surface-0 px-3 py-2 text-[13px] outline-none focus:border-brand"
+                />
+                {mode === "signup" && (
+                  <p className="mt-1 text-[10.5px] text-text-muted">
+                    Use at least 8 characters.
+                  </p>
+                )}
+              </div>
+            )}
             {err && (
               <p className="rounded-md bg-[oklch(0.96_0.04_25)] px-2.5 py-2 text-[11px] text-[oklch(0.42_0.15_25)]">
                 {err}
+              </p>
+            )}
+            {info && (
+              <p className="rounded-md bg-[oklch(0.96_0.04_150)] px-2.5 py-2 text-[11px] text-[oklch(0.38_0.12_150)]">
+                {info}
               </p>
             )}
             <button
@@ -276,20 +328,54 @@ function AuthPage() {
               className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-[13px] font-medium text-brand-foreground disabled:opacity-60"
             >
               {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-              {mode === "signin" ? "Sign in" : "Create account"}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setErr(null);
-                setMode(mode === "signin" ? "signup" : "signin");
-              }}
-              className="w-full text-center text-[12px] text-text-muted hover:text-text-secondary"
-            >
               {mode === "signin"
-                ? "New here? Create an account"
-                : "Already have an account? Sign in"}
+                ? "Sign in"
+                : mode === "signup"
+                  ? "Create account"
+                  : "Send reset link"}
             </button>
+            <div className="flex flex-col gap-1.5">
+              {mode === "signin" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setErr(null);
+                    setInfo(null);
+                    setMode("forgot");
+                  }}
+                  className="w-full text-center text-[12px] text-text-muted hover:text-text-secondary"
+                >
+                  Forgot password?
+                </button>
+              )}
+              {mode === "signup" && (
+                <button
+                  type="button"
+                  onClick={resendConfirmation}
+                  disabled={busy}
+                  className="w-full text-center text-[12px] text-text-muted hover:text-text-secondary disabled:opacity-60"
+                >
+                  Didn't get the email? Resend confirmation
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setErr(null);
+                  setInfo(null);
+                  setMode(
+                    mode === "signin" ? "signup" : mode === "signup" ? "signin" : "signin",
+                  );
+                }}
+                className="w-full text-center text-[12px] text-text-muted hover:text-text-secondary"
+              >
+                {mode === "signin"
+                  ? "New here? Create an account"
+                  : mode === "signup"
+                    ? "Already have an account? Sign in"
+                    : "Back to sign in"}
+              </button>
+            </div>
           </form>
         ) : (
           <form onSubmit={otpSent ? verifyOtp : sendOtp} className="space-y-3">
