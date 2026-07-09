@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { LegalFooter } from "@/components/LegalFooter";
 
 export const Route = createFileRoute("/terms")({
   head: () => ({
