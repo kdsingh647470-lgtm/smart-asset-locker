@@ -3390,7 +3390,7 @@ function FamilySheet({ onClose }: { onClose: () => void }) {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Household name (e.g. Sharma Home)"
-                  className="flex-1 rounded-lg border border-border bg-surface-1 px-3 py-2 text-[13px] outline-none focus:border-accent-blue"
+                  className="flex-1 rounded-lg border border-border bg-surface-2 px-3 py-2 text-[13px] text-text-primary placeholder:text-text-muted outline-none focus:border-accent-blue"
                 />
                 <button
                   type="button"
