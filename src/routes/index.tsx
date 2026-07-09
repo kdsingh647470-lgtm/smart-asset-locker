@@ -3434,7 +3434,7 @@ function FamilySheet({ onClose }: { onClose: () => void }) {
                       const v = e.currentTarget.value.trim();
                       if (v && v !== active.name) rename.mutate({ id: active.id, name: v });
                     }}
-                    className="flex-1 rounded-md bg-transparent px-1 py-0.5 text-[14px] font-medium outline-none disabled:opacity-70 focus:bg-surface-2"
+                    className="flex-1 rounded-md bg-transparent px-1 py-0.5 text-[14px] font-medium text-text-primary outline-none disabled:opacity-70 focus:bg-surface-2"
                   />
                   <span className="text-[10px] uppercase tracking-wide text-text-muted">
                     {isOwner ? "Owner" : "Member"}
