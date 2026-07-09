@@ -97,7 +97,6 @@ import {
 import { hasSeenOnboarding } from "@/lib/onboarding-storage";
 import {
   createHousehold,
-  createInvite,
   deleteHousehold,
   inviteLink,
   listInvites,
@@ -109,6 +108,10 @@ import {
   updateMemberRole,
   type HouseholdRole,
 } from "@/lib/household-api";
+import { createHouseholdInvite } from "@/lib/invite.functions";
+import { OnboardingChecklist } from "@/components/OnboardingChecklist";
+import { ThemeToggle } from "@/components/ThemeToggle";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -441,6 +444,13 @@ function ProfileSheet({
           <span className="text-[11px] text-text-muted">Recent &amp; upcoming</span>
         </button>
 
+        <div className="mt-3">
+          <p className="mb-1 text-[11px] font-medium text-text-secondary">Appearance</p>
+          <ThemeToggle />
+        </div>
+
+
+
 
         <div className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-text-muted">
           <Link to="/support" onClick={onClose} className="hover:text-text-secondary">Support</Link>
@@ -746,12 +756,23 @@ function Dashboard({ setTab }: { setTab: (t: TabKey) => void }) {
   const itemsQ = useQuery({ queryKey: ["items"], queryFn: listItems });
   const items = itemsQ.data ?? [];
   const isDemo = items.length === 0;
+  const docsQ = useQuery({ queryKey: ["documents"], queryFn: listDocuments });
+  const tasksQ = useQuery({ queryKey: ["maint-tasks"], queryFn: listMaintTasks });
 
   const reminders = buildReminders(items);
   const attentionCount = reminders.length;
   const fallbackAlerts = ALERTS;
   return (
     <>
+      <OnboardingChecklist
+        hasItems={items.length > 0}
+        hasDocuments={(docsQ.data ?? []).length > 0}
+        hasTasks={(tasksQ.data ?? []).length > 0}
+        onAdd={() => setTab("inv")}
+        onScan={() => setTab("scan")}
+        onLocker={() => setTab("locker")}
+        onTasks={() => setTab("ins")}
+      />
       {isDemo && <DemoBanner setTab={setTab} />}
 
       {isDemo ? (
@@ -3283,7 +3304,14 @@ function FamilySheet({ onClose }: { onClose: () => void }) {
     onError: (e) => toast.error((e as Error).message),
   });
   const invite = useMutation({
-    mutationFn: () => createInvite(active!.id, inviteEmail, inviteRole, userId),
+    mutationFn: () =>
+      createHouseholdInvite({
+        data: {
+          householdId: active!.id,
+          email: inviteEmail,
+          role: inviteRole === "owner" ? "editor" : (inviteRole as "editor" | "viewer"),
+        },
+      }),
     onSuccess: (inv) => {
       setInviteEmail("");
       qc.invalidateQueries({ queryKey: ["household-invites", active?.id] });
