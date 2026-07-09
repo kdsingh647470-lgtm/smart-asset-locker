@@ -75,18 +75,53 @@ function AuthPage() {
     setBusy(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: { emailRedirectTo: `${window.location.origin}/` },
         });
         if (error) throw error;
+        // If email confirmation is required, no session is returned.
+        if (!data.session) {
+          setInfo(
+            `We sent a confirmation link to ${email}. Open it on this device to finish signing up.`,
+          );
+        }
+      } else if (mode === "forgot") {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (error) throw error;
+        setInfo(`If an account exists for ${email}, a password-reset link is on its way.`);
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
     } catch (e: unknown) {
       setErr(e instanceof Error ? e.message : "Something went wrong");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function resendConfirmation() {
+    if (!email) {
+      setErr("Enter your email above first.");
+      return;
+    }
+    setErr(null);
+    setInfo(null);
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email,
+        options: { emailRedirectTo: `${window.location.origin}/` },
+      });
+      if (error) throw error;
+      setInfo(`Confirmation email resent to ${email}.`);
+    } catch (e: unknown) {
+      setErr(e instanceof Error ? e.message : "Could not resend email");
     } finally {
       setBusy(false);
     }
