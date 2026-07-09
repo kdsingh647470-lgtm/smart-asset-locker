@@ -192,7 +192,9 @@ function AuthPage() {
               : "Sign in with mobile"
             : mode === "signin"
               ? "Welcome back"
-              : "Create your vault"}
+              : mode === "signup"
+                ? "Create your vault"
+                : "Reset your password"}
         </h2>
         <p className="mb-4 text-[12px] text-text-muted">
           {channel === "phone"
@@ -201,8 +203,11 @@ function AuthPage() {
               : "We'll text you a one-time password."
             : mode === "signin"
               ? "Sign in to access your encrypted home inventory."
-              : "Start tracking every asset, warranty and document."}
+              : mode === "signup"
+                ? "Start tracking every asset, warranty and document."
+                : "Enter your email — we'll send a reset link."}
         </p>
+
 
         {/* Google sign-in */}
         <button
