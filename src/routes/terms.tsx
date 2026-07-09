@@ -74,6 +74,7 @@ function TermsPage() {
           <a className="text-brand underline" href="mailto:support@gharlog.app">support@gharlog.app</a>
         </p>
       </section>
+      <LegalFooter />
     </main>
   );
 }

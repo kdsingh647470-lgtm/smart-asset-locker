@@ -32,6 +32,7 @@ import { listMyNotifications, markAllRead, type AppNotification } from "@/lib/no
 import { toast } from "sonner";
 import { EmailVerifyBanner } from "@/components/EmailVerifyBanner";
 import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
+import { APP_VERSION, APP_BUILD } from "@/lib/app-version";
 import {
   HomeIcon,
   Box,
@@ -442,6 +443,8 @@ function ProfileSheet({
 
 
         <div className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-text-muted">
+          <Link to="/support" onClick={onClose} className="hover:text-text-secondary">Support</Link>
+          <span aria-hidden>·</span>
           <Link to="/privacy" onClick={onClose} className="hover:text-text-secondary">Privacy</Link>
           <span aria-hidden>·</span>
           <Link to="/terms" onClick={onClose} className="hover:text-text-secondary">Terms</Link>
@@ -450,6 +453,9 @@ function ProfileSheet({
           <span aria-hidden>·</span>
           <Link to="/account/delete" onClick={onClose} className="text-[oklch(0.55_0.2_25)] hover:underline">Delete account</Link>
         </div>
+        <p className="mt-2 text-center text-[10px] text-text-muted">
+          GharLog v{APP_VERSION} · build {APP_BUILD}
+        </p>
 
         <div className="mt-3 flex gap-2">
           <button

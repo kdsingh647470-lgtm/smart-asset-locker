@@ -159,6 +159,7 @@ function DataSafetyPage() {
       <p className="mt-2">
         Data protection queries: <a className="text-brand underline" href="mailto:support@gharlog.app">support@gharlog.app</a>
       </p>
+      <LegalFooter />
     </main>
   );
 }
