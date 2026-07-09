@@ -43,7 +43,7 @@ export const createHouseholdInvite = createServerFn({ method: "POST" })
       .insert({
         household_id: data.householdId,
         email: data.email,
-        role: data.role,
+        role: data.role as "editor" | "viewer",
         invited_by: userId,
       })
       .select("id, token, email, role, expires_at")
