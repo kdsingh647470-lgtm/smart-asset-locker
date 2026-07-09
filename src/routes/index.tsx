@@ -3365,10 +3365,15 @@ function FamilySheet({ onClose }: { onClose: () => void }) {
         <div className="flex items-center justify-between border-b border-border bg-surface-1 px-4 py-3">
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-brand" />
-            <h3 className="text-[15px] font-medium">Family sharing</h3>
+            <h3 className="text-[15px] font-medium text-text-primary">Family sharing</h3>
           </div>
-          <button type="button" onClick={onClose} className="rounded-full bg-surface-2 px-3 py-1 text-[12px]">
-            Done
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface-2 text-text-primary shadow-sm hover:bg-surface-1"
+          >
+            <X className="h-4 w-4" />
           </button>
         </div>
 
