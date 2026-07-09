@@ -1,4 +1,4 @@
-import { createFileRoute, Navigate, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useChat } from "@ai-sdk/react";
@@ -437,7 +437,15 @@ function ProfileSheet({
         </button>
 
 
-        <div className="mt-4 flex gap-2">
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-text-muted">
+          <Link to="/privacy" onClick={onClose} className="hover:text-text-secondary">Privacy</Link>
+          <span aria-hidden>·</span>
+          <Link to="/terms" onClick={onClose} className="hover:text-text-secondary">Terms</Link>
+          <span aria-hidden>·</span>
+          <Link to="/account/delete" onClick={onClose} className="text-[oklch(0.55_0.2_25)] hover:underline">Delete account</Link>
+        </div>
+
+        <div className="mt-3 flex gap-2">
           <button
             type="button"
             onClick={onClose}
