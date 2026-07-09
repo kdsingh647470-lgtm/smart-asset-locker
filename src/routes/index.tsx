@@ -1,4 +1,5 @@
 import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useChat } from "@ai-sdk/react";
@@ -3270,6 +3271,7 @@ function PlanCard({
 function FamilySheet({ onClose }: { onClose: () => void }) {
   const { session } = useAuth();
   const qc = useQueryClient();
+  const createInviteFn = useServerFn(createHouseholdInvite);
   const userId = session?.user.id ?? "";
   const myEmail = session?.user.email ?? "";
   const householdsQ = useQuery({ queryKey: ["households"], queryFn: listMyHouseholds, enabled: !!session });
@@ -3292,6 +3294,7 @@ function FamilySheet({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<HouseholdRole>("viewer");
+  const [shareInvite, setShareInvite] = useState<{ email: string; link: string; role: "editor" | "viewer" } | null>(null);
 
   const createH = useMutation({
     mutationFn: () => createHousehold(name || "My Household", userId),
@@ -3305,7 +3308,7 @@ function FamilySheet({ onClose }: { onClose: () => void }) {
   });
   const invite = useMutation({
     mutationFn: () =>
-      createHouseholdInvite({
+      createInviteFn({
         data: {
           householdId: active!.id,
           email: inviteEmail,
@@ -3316,8 +3319,9 @@ function FamilySheet({ onClose }: { onClose: () => void }) {
       setInviteEmail("");
       qc.invalidateQueries({ queryKey: ["household-invites", active?.id] });
       const link = inviteLink(inv.token);
+      setShareInvite({ email: inv.email, link, role: inv.role });
       navigator.clipboard?.writeText(link).catch(() => {});
-      toast.success("Invite created", { description: "Link copied — share it with your family." });
+      toast.success("Invite ready", { description: "Choose WhatsApp or email below to share it." });
     },
     onError: (e) => toast.error((e as Error).message),
   });
@@ -3355,6 +3359,23 @@ function FamilySheet({ onClose }: { onClose: () => void }) {
       () => toast.error("Copy failed"),
     );
   }
+
+  function copyInviteLink(link: string) {
+    navigator.clipboard?.writeText(link).then(
+      () => toast.success("Link copied"),
+      () => toast.error("Copy failed"),
+    );
+  }
+
+  const inviteShareText = shareInvite
+    ? `Join my GharLog household as ${shareInvite.role}. Open this secure invite link: ${shareInvite.link}`
+    : "";
+  const whatsappHref = shareInvite
+    ? `https://wa.me/?text=${encodeURIComponent(inviteShareText)}`
+    : "#";
+  const emailHref = shareInvite
+    ? `mailto:${encodeURIComponent(shareInvite.email)}?subject=${encodeURIComponent("GharLog family invite")}&body=${encodeURIComponent(inviteShareText)}`
+    : "#";
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end justify-center bg-black/60 sm:items-center" onClick={onClose}>
@@ -3511,12 +3532,64 @@ function FamilySheet({ onClose }: { onClose: () => void }) {
                       onClick={() => invite.mutate()}
                       className="rounded-lg bg-brand px-3 py-2 text-[12px] font-medium text-brand-foreground disabled:opacity-60"
                     >
-                      Send invite
+                      {invite.isPending ? "Creating…" : "Send invite"}
                     </button>
                   </div>
                   <p className="mt-1.5 text-[10.5px] text-text-muted">
                     Creates a secure invite link, valid for 14 days. Share via WhatsApp, email or SMS.
                   </p>
+                  {invite.isError && (
+                    <p className="mt-2 rounded-md border border-bad/30 bg-bad/10 px-2 py-1.5 text-[11px] font-medium text-bad">
+                      {(invite.error as Error).message || "Could not create invite. Please try again."}
+                    </p>
+                  )}
+                  {shareInvite && (
+                    <div className="mt-3 rounded-lg border border-brand/40 bg-surface-2 p-3">
+                      <div className="mb-2 flex items-start justify-between gap-2">
+                        <div>
+                          <div className="text-[12px] font-semibold text-text-primary">Invite link ready</div>
+                          <div className="text-[10.5px] text-text-secondary">For {shareInvite.email}</div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShareInvite(null)}
+                          className="rounded-full p-1 text-text-secondary hover:bg-surface-3 hover:text-text-primary"
+                          aria-label="Hide invite share options"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      <div className="mb-2 break-all rounded-md border border-border bg-surface-0 px-2 py-1.5 text-[11px] font-medium text-text-primary">
+                        {shareInvite.link}
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <a
+                          href={whatsappHref}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center justify-center gap-1.5 rounded-lg border border-ok bg-ok/15 px-2 py-2 text-[11px] font-semibold text-text-primary"
+                        >
+                          <MessageCircle className="h-3.5 w-3.5" />
+                          WhatsApp
+                        </a>
+                        <a
+                          href={emailHref}
+                          className="flex items-center justify-center gap-1.5 rounded-lg bg-surface-3 px-2 py-2 text-[11px] font-semibold text-text-primary"
+                        >
+                          <Mail className="h-3.5 w-3.5" />
+                          Email
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => copyInviteLink(shareInvite.link)}
+                          className="flex items-center justify-center gap-1.5 rounded-lg bg-surface-3 px-2 py-2 text-[11px] font-semibold text-text-primary"
+                        >
+                          <Copy className="h-3.5 w-3.5" />
+                          Copy
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

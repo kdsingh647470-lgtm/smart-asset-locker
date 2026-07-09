@@ -1,8 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-const MAX_INVITES_PER_DAY = 10;
-
 export const createHouseholdInvite = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { householdId: string; email: string; role: "editor" | "viewer" }) => {
@@ -22,6 +20,7 @@ export const createHouseholdInvite = createServerFn({ method: "POST" })
     expires_at: string;
   }> => {
     const { supabase, userId } = context;
+    const MAX_INVITES_PER_DAY = 10;
 
     // Rate limit: cap invites created by this user in the last 24 hours.
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
