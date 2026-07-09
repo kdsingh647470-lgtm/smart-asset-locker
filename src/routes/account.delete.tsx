@@ -133,6 +133,22 @@ function DeleteAccountPage() {
             className="w-full rounded-lg border border-border bg-surface-0 px-3 py-2 text-[13px] outline-none focus:border-brand"
             autoComplete="off"
           />
+
+          {hasPasswordLogin && (
+            <>
+              <label className="block text-[11px] font-medium text-text-secondary">
+                Enter your current password
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-lg border border-border bg-surface-0 px-3 py-2 text-[13px] outline-none focus:border-brand"
+                autoComplete="current-password"
+              />
+            </>
+          )}
+
           {err && (
             <p className="rounded-md bg-[oklch(0.96_0.04_25)] px-2.5 py-2 text-[11px] text-[oklch(0.42_0.15_25)]">
               {err}
@@ -147,7 +163,7 @@ function DeleteAccountPage() {
             </Link>
             <button
               type="submit"
-              disabled={busy || confirm !== "DELETE"}
+              disabled={busy || confirm !== "DELETE" || (hasPasswordLogin && !password)}
               className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[oklch(0.55_0.2_25)] px-4 py-2.5 text-[13px] font-medium text-white disabled:opacity-50"
             >
               {busy && <Loader2 className="h-4 w-4 animate-spin" />}
