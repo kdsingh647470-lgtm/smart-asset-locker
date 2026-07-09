@@ -97,7 +97,6 @@ import {
 import { hasSeenOnboarding } from "@/lib/onboarding-storage";
 import {
   createHousehold,
-  createInvite: _unusedCreateInvite,
   deleteHousehold,
   inviteLink,
   listInvites,
@@ -109,6 +108,10 @@ import {
   updateMemberRole,
   type HouseholdRole,
 } from "@/lib/household-api";
+import { createHouseholdInvite } from "@/lib/invite.functions";
+import { OnboardingChecklist } from "@/components/OnboardingChecklist";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { listMaintTasks as _listMaintForOnboard } from "@/lib/maintenance-api";
 
 export const Route = createFileRoute("/")({
   head: () => ({
