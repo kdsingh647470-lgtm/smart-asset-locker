@@ -29,7 +29,7 @@ function AuthPage() {
   const navigate = useNavigate();
   const { session, loading } = useAuth();
   const [channel, setChannel] = useState<Channel>("email");
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<"signin" | "signup" | "forgot">("signin");
 
   // email
   const [email, setEmail] = useState("");
