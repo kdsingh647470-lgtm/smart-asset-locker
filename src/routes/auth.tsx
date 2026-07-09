@@ -25,6 +25,39 @@ export const Route = createFileRoute("/auth")({
 
 type Channel = "email" | "phone";
 
+function PasswordTips({ password }: { password: string }) {
+  const checks = [
+    { label: "At least 8 characters", met: password.length >= 8 },
+    { label: "Uppercase & lowercase letters", met: /[a-z]/.test(password) && /[A-Z]/.test(password) },
+    { label: "At least one number", met: /\d/.test(password) },
+    { label: "At least one symbol (e.g. !@#)", met: /[^a-zA-Z0-9]/.test(password) },
+  ];
+
+  return (
+    <div className="mt-2 space-y-1">
+      <p className="text-[10.5px] font-medium text-text-secondary">Strong password tips:</p>
+      <ul className="space-y-0.5">
+        {checks.map((c) => (
+          <li key={c.label} className="flex items-center gap-1.5 text-[10.5px]">
+            <span
+              className={
+                c.met
+                  ? "text-[oklch(0.66_0.14_158)]"
+                  : "text-text-muted"
+              }
+              aria-hidden="true"
+            >
+              {c.met ? "✓" : "○"}
+            </span>
+            <span className={c.met ? "text-text-secondary" : "text-text-muted"}>{c.label}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="text-[10px] text-text-muted">We also check your password against known data breaches automatically.</p>
+    </div>
+  );
+}
+
 function AuthPage() {
   const navigate = useNavigate();
   const { session, loading } = useAuth();
@@ -306,9 +339,7 @@ function AuthPage() {
                   className="w-full rounded-lg border border-border bg-surface-0 px-3 py-2 text-[13px] outline-none focus:border-brand"
                 />
                 {mode === "signup" && (
-                  <p className="mt-1 text-[10.5px] text-text-muted">
-                    Use at least 8 characters.
-                  </p>
+                  <PasswordTips password={password} />
                 )}
               </div>
             )}
