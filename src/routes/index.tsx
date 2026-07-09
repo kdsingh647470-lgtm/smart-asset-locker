@@ -97,7 +97,7 @@ import {
 import { hasSeenOnboarding } from "@/lib/onboarding-storage";
 import {
   createHousehold,
-  createInvite,
+  createInvite: _unusedCreateInvite,
   deleteHousehold,
   inviteLink,
   listInvites,
