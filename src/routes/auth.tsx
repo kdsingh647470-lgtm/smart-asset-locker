@@ -85,9 +85,9 @@ function AuthPage() {
       } catch { /* ignore */ }
       if (pending) {
         try { sessionStorage.removeItem("gharlog:pending-invite"); } catch { /* ignore */ }
-        navigate({ to: "/invite/$token", params: { token: pending } });
+        navigate({ to: "/invite/$token", params: { token: pending }, replace: true });
       } else {
-        navigate({ to: "/" });
+        navigate({ to: "/", replace: true });
       }
     }
   }, [loading, session, navigate]);
