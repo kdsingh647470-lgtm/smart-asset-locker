@@ -3495,12 +3495,12 @@ function FamilySheet({ onClose }: { onClose: () => void }) {
                       onChange={(e) => setInviteEmail(e.target.value)}
                       type="email"
                       placeholder="family@example.com"
-                      className="flex-1 rounded-lg border border-border bg-surface-2 px-3 py-2 text-[13px] outline-none focus:border-accent-blue"
+                      className="flex-1 rounded-lg border border-border bg-surface-2 px-3 py-2 text-[13px] text-text-primary placeholder:text-text-muted outline-none focus:border-accent-blue"
                     />
                     <select
                       value={inviteRole}
                       onChange={(e) => setInviteRole(e.target.value as HouseholdRole)}
-                      className="rounded-lg border border-border bg-surface-2 px-2 py-2 text-[12px]"
+                      className="rounded-lg border border-border bg-surface-2 px-2 py-2 text-[12px] text-text-primary"
                     >
                       <option value="viewer">Viewer</option>
                       <option value="editor">Editor</option>
