@@ -20,13 +20,22 @@ export const Route = createFileRoute("/account/delete")({
 
 function DeleteAccountPage() {
   const navigate = useNavigate();
-  const { session, loading } = useAuth();
+  const { session, user, loading } = useAuth();
   const del = useServerFn(deleteMyAccount);
   const doExport = useServerFn(exportMyData);
   const [confirm, setConfirm] = useState("");
+  const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  // Detect password (email) identity — those users must re-authenticate.
+  const identities = user?.identities ?? [];
+  const hasPasswordLogin = identities.some((i) => i.provider === "email");
+  const passwordEmail =
+    identities.find((i) => i.provider === "email")?.identity_data?.email ??
+    user?.email ??
+    "";
 
   async function onExport() {
     setErr(null);
@@ -64,6 +73,15 @@ function DeleteAccountPage() {
     setErr(null);
     setBusy(true);
     try {
+      // Re-authenticate password users to prevent hijacked-session account destruction.
+      if (hasPasswordLogin) {
+        if (!password) throw new Error("Enter your current password to confirm");
+        const { error: reErr } = await supabase.auth.signInWithPassword({
+          email: passwordEmail,
+          password,
+        });
+        if (reErr) throw new Error("Incorrect password");
+      }
       await del({ data: { confirm } });
       try { await supabase.auth.signOut(); } catch { /* ignore */ }
       navigate({ to: "/auth", replace: true });
