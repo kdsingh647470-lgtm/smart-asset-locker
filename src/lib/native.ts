@@ -29,8 +29,9 @@ export async function shareContent(opts: { title?: string; text?: string; url?: 
   }
   // Fallback: copy URL/text to clipboard
   const payload = opts.url ?? opts.text ?? '';
-  if (payload && typeof navigator !== 'undefined' && navigator.clipboard) {
-    await navigator.clipboard.writeText(payload);
+  const nav = typeof navigator !== 'undefined' ? (navigator as Navigator) : null;
+  if (payload && nav?.clipboard) {
+    await nav.clipboard.writeText(payload);
     return true;
   }
   return false;
