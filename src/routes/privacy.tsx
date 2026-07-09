@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { LegalFooter } from "@/components/LegalFooter";
 
 export const Route = createFileRoute("/privacy")({
   head: () => ({
@@ -91,6 +92,7 @@ function PrivacyPage() {
           Questions or data requests: <a className="text-brand underline" href="mailto:support@gharlog.app">support@gharlog.app</a>
         </p>
       </section>
+      <LegalFooter />
     </main>
   );
 }
