@@ -3286,7 +3286,14 @@ function FamilySheet({ onClose }: { onClose: () => void }) {
     onError: (e) => toast.error((e as Error).message),
   });
   const invite = useMutation({
-    mutationFn: () => createInvite(active!.id, inviteEmail, inviteRole, userId),
+    mutationFn: () =>
+      createHouseholdInvite({
+        data: {
+          householdId: active!.id,
+          email: inviteEmail,
+          role: inviteRole === "owner" ? "editor" : (inviteRole as "editor" | "viewer"),
+        },
+      }),
     onSuccess: (inv) => {
       setInviteEmail("");
       qc.invalidateQueries({ queryKey: ["household-invites", active?.id] });
