@@ -306,9 +306,7 @@ function AuthPage() {
                   className="w-full rounded-lg border border-border bg-surface-0 px-3 py-2 text-[13px] outline-none focus:border-brand"
                 />
                 {mode === "signup" && (
-                  <p className="mt-1 text-[10.5px] text-text-muted">
-                    Use at least 8 characters.
-                  </p>
+                  <PasswordTips password={password} />
                 )}
               </div>
             )}
