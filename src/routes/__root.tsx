@@ -124,15 +124,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
             {
               "@type": "Organization",
               name: "GharLog",
-              url: "https://smart-asset-locker.lovable.app",
-              logo: "https://smart-asset-locker.lovable.app/icon-512.png",
+              url: "https://gharlog.nesake.com",
+              logo: "https://gharlog.nesake.com/icon-512.png",
               description:
                 "India's Digital Home Asset Manager — track appliances, warranties, documents and insurance in one encrypted vault.",
             },
             {
               "@type": "WebSite",
               name: "GharLog",
-              url: "https://smart-asset-locker.lovable.app",
+              url: "https://gharlog.nesake.com",
             },
           ],
         }),

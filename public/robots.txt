@@ -4,4 +4,4 @@ Disallow: /auth
 Disallow: /onboarding
 Disallow: /api/
 
-Sitemap: https://smart-asset-locker.lovable.app/sitemap.xml
+Sitemap: https://gharlog.nesake.com/sitemap.xml

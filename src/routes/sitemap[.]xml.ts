@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type {} from "@tanstack/react-start";
 
-const BASE_URL = "https://smart-asset-locker.lovable.app";
+const BASE_URL = "https://gharlog.nesake.com";
 
 interface SitemapEntry {
   path: string;

@@ -129,9 +129,9 @@ export const Route = createFileRoute("/")({
         content:
           "Track every appliance, warranty, document and insurance for your home in one encrypted vault.",
       },
-      { property: "og:url", content: "https://smart-asset-locker.lovable.app/" },
+      { property: "og:url", content: "https://gharlog.nesake.com/" },
     ],
-    links: [{ rel: "canonical", href: "https://smart-asset-locker.lovable.app/" }],
+    links: [{ rel: "canonical", href: "https://gharlog.nesake.com/" }],
   }),
   component: GharLogApp,
 });
