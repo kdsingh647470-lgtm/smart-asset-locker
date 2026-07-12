@@ -15,9 +15,9 @@ export const Route = createFileRoute("/data-safety")({
         property: "og:description",
         content: "What GharLog collects, why, and how it's protected.",
       },
-      { property: "og:url", content: "https://smart-asset-locker.lovable.app/data-safety" },
+      { property: "og:url", content: "https://gharlog.nesake.com/data-safety" },
     ],
-    links: [{ rel: "canonical", href: "https://smart-asset-locker.lovable.app/data-safety" }],
+    links: [{ rel: "canonical", href: "https://gharlog.nesake.com/data-safety" }],
   }),
   component: DataSafetyPage,
 });

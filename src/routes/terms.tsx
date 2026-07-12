@@ -11,9 +11,9 @@ export const Route = createFileRoute("/terms")({
       },
       { property: "og:title", content: "Terms of Service — GharLog" },
       { property: "og:description", content: "The rules for using GharLog." },
-      { property: "og:url", content: "https://smart-asset-locker.lovable.app/terms" },
+      { property: "og:url", content: "https://gharlog.nesake.com/terms" },
     ],
-    links: [{ rel: "canonical", href: "https://smart-asset-locker.lovable.app/terms" }],
+    links: [{ rel: "canonical", href: "https://gharlog.nesake.com/terms" }],
   }),
   component: TermsPage,
 });

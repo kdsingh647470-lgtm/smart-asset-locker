@@ -20,9 +20,9 @@ export const Route = createFileRoute("/support")({
         property: "og:description",
         content: "Report a problem or contact the GharLog team.",
       },
-      { property: "og:url", content: "https://smart-asset-locker.lovable.app/support" },
+      { property: "og:url", content: "https://gharlog.nesake.com/support" },
     ],
-    links: [{ rel: "canonical", href: "https://smart-asset-locker.lovable.app/support" }],
+    links: [{ rel: "canonical", href: "https://gharlog.nesake.com/support" }],
   }),
   component: SupportPage,
 });

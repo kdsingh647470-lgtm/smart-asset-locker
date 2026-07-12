@@ -10,7 +10,7 @@ Gradle, no local setup.
 ## Option A — Install directly on a phone today (0 minutes)
 
 1. Open the published URL on Android Chrome:
-   **https://smart-asset-locker.lovable.app**
+   **https://gharlog.nesake.com**
 2. Tap the ⋮ menu → **Install app** (or "Add to Home Screen").
 3. GharLog now lives on the home screen with its own icon and runs full
    screen, just like a Play Store app. No store account, no review, no APK.
@@ -25,7 +25,7 @@ when you actually want a Play Store listing.
 ### What you need first
 - A **Google Play Developer account** — one-time **$25** at
   https://play.google.com/console/signup
-- The published URL: **https://smart-asset-locker.lovable.app**
+- The published URL: **https://gharlog.nesake.com**
 
 ### Steps
 1. Click **Publish** in Lovable so the latest version is live.

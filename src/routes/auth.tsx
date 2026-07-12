@@ -15,10 +15,10 @@ export const Route = createFileRoute("/auth")({
         property: "og:description",
         content: "Sign in to your encrypted GharLog home asset vault.",
       },
-      { property: "og:url", content: "https://smart-asset-locker.lovable.app/auth" },
+      { property: "og:url", content: "https://gharlog.nesake.com/auth" },
       { name: "robots", content: "noindex" },
     ],
-    links: [{ rel: "canonical", href: "https://smart-asset-locker.lovable.app/auth" }],
+    links: [{ rel: "canonical", href: "https://gharlog.nesake.com/auth" }],
   }),
   component: AuthPage,
 });

@@ -15,9 +15,9 @@ export const Route = createFileRoute("/privacy")({
         property: "og:description",
         content: "How GharLog handles your data and your rights over it.",
       },
-      { property: "og:url", content: "https://smart-asset-locker.lovable.app/privacy" },
+      { property: "og:url", content: "https://gharlog.nesake.com/privacy" },
     ],
-    links: [{ rel: "canonical", href: "https://smart-asset-locker.lovable.app/privacy" }],
+    links: [{ rel: "canonical", href: "https://gharlog.nesake.com/privacy" }],
   }),
   component: PrivacyPage,
 });

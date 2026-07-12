@@ -1,5 +1,5 @@
 // Razorpay webhook. Configure in Razorpay Dashboard → Settings → Webhooks with URL:
-//   https://smart-asset-locker.lovable.app/api/public/razorpay-webhook
+//   https://gharlog.nesake.com/api/public/razorpay-webhook
 // Subscribe to at least: payment.captured, order.paid.
 // Set RAZORPAY_WEBHOOK_SECRET to the same value entered in the dashboard.
 import { createFileRoute } from "@tanstack/react-router";

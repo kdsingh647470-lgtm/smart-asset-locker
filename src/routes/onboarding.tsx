@@ -32,10 +32,10 @@ export const Route = createFileRoute("/onboarding")({
         content:
           "Quick tour of GharLog — how to scan, store and track every home asset, warranty and document.",
       },
-      { property: "og:url", content: "https://smart-asset-locker.lovable.app/onboarding" },
+      { property: "og:url", content: "https://gharlog.nesake.com/onboarding" },
       { name: "robots", content: "noindex" },
     ],
-    links: [{ rel: "canonical", href: "https://smart-asset-locker.lovable.app/onboarding" }],
+    links: [{ rel: "canonical", href: "https://gharlog.nesake.com/onboarding" }],
   }),
   component: OnboardingPage,
 });
