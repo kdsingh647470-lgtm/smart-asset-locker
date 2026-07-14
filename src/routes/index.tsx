@@ -3121,7 +3121,7 @@ function UpgradeModal({
           <h3 className="text-[15px] font-medium">Unlock Pro</h3>
         </div>
         <p className="mb-3 text-[12px] text-text-muted">
-          ₹999 / year. Unlimited items, AI scanner, insurance reports & family sharing.
+          ₹1 / year (TEST). Unlimited items, AI scanner, insurance reports & family sharing.
         </p>
 
         <button
@@ -3130,7 +3130,7 @@ function UpgradeModal({
           onClick={payNow}
           className="w-full rounded-xl bg-brand px-3 py-2.5 text-[13px] font-medium text-brand-foreground disabled:opacity-60"
         >
-          {paying ? "Processing…" : "Pay ₹999 with Razorpay"}
+          {paying ? "Processing…" : "Pay ₹1 with Razorpay (TEST)"}
         </button>
         {payMsg && (
           <div className="mt-2 rounded-md bg-surface-2 px-2.5 py-2 text-[11px] text-text-secondary">
