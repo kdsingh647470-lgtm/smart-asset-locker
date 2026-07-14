@@ -2976,7 +2976,7 @@ function Insurance({ setTab }: { setTab: (t: TabKey) => void }) {
         <PlanCard
           name="Pro"
           price="₹999"
-          per="per year · ₹83/mo"
+          per="per year · or ₹99/mo"
           recommended
           features={[
             { ok: true, label: "Unlimited items" },
