@@ -364,6 +364,24 @@ export type Database = {
         }
         Relationships: []
       }
+      razorpay_plans: {
+        Row: {
+          billing: string
+          created_at: string
+          plan_id: string
+        }
+        Insert: {
+          billing: string
+          created_at?: string
+          plan_id: string
+        }
+        Update: {
+          billing?: string
+          created_at?: string
+          plan_id?: string
+        }
+        Relationships: []
+      }
       user_plans: {
         Row: {
           activated_at: string | null
@@ -386,6 +404,39 @@ export type Database = {
           created_at?: string
           plan?: string
           promo_code?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_subscriptions: {
+        Row: {
+          billing: string
+          cancel_at_cycle_end: boolean
+          created_at: string
+          current_end: string | null
+          status: string
+          subscription_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          billing: string
+          cancel_at_cycle_end?: boolean
+          created_at?: string
+          current_end?: string | null
+          status: string
+          subscription_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          billing?: string
+          cancel_at_cycle_end?: boolean
+          created_at?: string
+          current_end?: string | null
+          status?: string
+          subscription_id?: string
           updated_at?: string
           user_id?: string
         }

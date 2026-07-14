@@ -28,7 +28,7 @@ import {
 } from "@/lib/maintenance-api";
 import { buildReminders } from "@/lib/reminders";
 import { getMyPlan, redeemProCode } from "@/lib/plan.functions";
-import { createRazorpayProOrder } from "@/lib/razorpay.functions";
+import { createRazorpayProSubscription } from "@/lib/razorpay.functions";
 import { listMyNotifications, markAllRead, type AppNotification } from "@/lib/notifications.functions";
 import { toast } from "sonner";
 import { EmailVerifyBanner } from "@/components/EmailVerifyBanner";
@@ -3072,20 +3072,20 @@ function UpgradeModal({
     try {
       const ok = await loadRzp();
       if (!ok) throw new Error("Could not load Razorpay. Check your connection.");
-      const order = await createRazorpayProOrder({ data: { billing } });
+      const sub = await createRazorpayProSubscription({ data: { billing } });
       const rzp = new (window as any).Razorpay({
-        key: order.keyId,
-        order_id: order.orderId,
-        amount: order.amount,
-        currency: order.currency,
+        key: sub.keyId,
+        subscription_id: sub.subscriptionId,
         name: "GharLog Pro",
-        description: order.billing === "yearly" ? "Pro plan — 1 year" : "Pro plan — 1 month",
-        prefill: order.userEmail ? { email: order.userEmail } : undefined,
+        description:
+          sub.billing === "yearly"
+            ? "Pro plan — billed ₹999/year"
+            : "Pro plan — billed ₹99/month",
+        prefill: sub.userEmail ? { email: sub.userEmail } : undefined,
         theme: { color: "#0f766e" },
         handler: () => {
-          // Payment succeeded on client. Webhook activates Pro server-side.
-          setPayMsg("Payment received — activating Pro…");
-          // Poll plan a few times.
+          // Subscription authorised. Webhook activates Pro server-side.
+          setPayMsg("Subscription authorised — activating Pro…");
           let tries = 0;
           const t = setInterval(async () => {
             tries++;
@@ -3094,7 +3094,7 @@ function UpgradeModal({
             if (fresh?.plan === "pro" || tries > 10) {
               clearInterval(t);
               if (fresh?.plan === "pro") onProActivated();
-              else setPayMsg("Payment received. Pro will activate shortly — refresh in a moment.");
+              else setPayMsg("Authorised. Pro will activate shortly — refresh in a moment.");
             }
           }, 1500);
         },
