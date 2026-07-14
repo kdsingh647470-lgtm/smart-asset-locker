@@ -3048,7 +3048,11 @@ function UpgradeModal({
 }) {
   const [paying, setPaying] = useState(false);
   const [payMsg, setPayMsg] = useState<string | null>(null);
+  const [billing, setBilling] = useState<"yearly" | "monthly">("yearly");
   const qc = useQueryClient();
+
+  const priceLabel = billing === "yearly" ? "₹999 / year" : "₹99 / month";
+  const payLabel = billing === "yearly" ? "Pay ₹999 with Razorpay" : "Pay ₹99 with Razorpay";
 
   async function loadRzp(): Promise<boolean> {
     if (typeof window === "undefined") return false;
@@ -3068,14 +3072,14 @@ function UpgradeModal({
     try {
       const ok = await loadRzp();
       if (!ok) throw new Error("Could not load Razorpay. Check your connection.");
-      const order = await createRazorpayProOrder();
+      const order = await createRazorpayProOrder({ data: { billing } });
       const rzp = new (window as any).Razorpay({
         key: order.keyId,
         order_id: order.orderId,
         amount: order.amount,
         currency: order.currency,
         name: "GharLog Pro",
-        description: "Pro plan — 1 year",
+        description: order.billing === "yearly" ? "Pro plan — 1 year" : "Pro plan — 1 month",
         prefill: order.userEmail ? { email: order.userEmail } : undefined,
         theme: { color: "#0f766e" },
         handler: () => {
@@ -3121,8 +3125,35 @@ function UpgradeModal({
           <h3 className="text-[15px] font-medium">Unlock Pro</h3>
         </div>
         <p className="mb-3 text-[12px] text-text-muted">
-          ₹1 / year (TEST). Unlimited items, AI scanner, insurance reports & family sharing.
+          {priceLabel}. Unlimited items, AI scanner, insurance reports & family sharing.
         </p>
+
+        <div className="mb-3 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => setBilling("yearly")}
+            className={`rounded-xl border px-3 py-2 text-left ${
+              billing === "yearly"
+                ? "border-brand bg-brand/10"
+                : "border-border bg-surface-2"
+            }`}
+          >
+            <div className="text-[12px] font-medium">Yearly</div>
+            <div className="text-[11px] text-text-muted">₹999 · save ~16%</div>
+          </button>
+          <button
+            type="button"
+            onClick={() => setBilling("monthly")}
+            className={`rounded-xl border px-3 py-2 text-left ${
+              billing === "monthly"
+                ? "border-brand bg-brand/10"
+                : "border-border bg-surface-2"
+            }`}
+          >
+            <div className="text-[12px] font-medium">Monthly</div>
+            <div className="text-[11px] text-text-muted">₹99 · cancel anytime</div>
+          </button>
+        </div>
 
         <button
           type="button"
@@ -3130,7 +3161,7 @@ function UpgradeModal({
           onClick={payNow}
           className="w-full rounded-xl bg-brand px-3 py-2.5 text-[13px] font-medium text-brand-foreground disabled:opacity-60"
         >
-          {paying ? "Processing…" : "Pay ₹1 with Razorpay (TEST)"}
+          {paying ? "Processing…" : payLabel}
         </button>
         {payMsg && (
           <div className="mt-2 rounded-md bg-surface-2 px-2.5 py-2 text-[11px] text-text-secondary">
