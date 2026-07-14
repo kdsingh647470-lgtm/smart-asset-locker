@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type CreateOrderResult = {
@@ -7,22 +8,30 @@ export type CreateOrderResult = {
   amount: number; // paise
   currency: string;
   userEmail: string | null;
+  billing: "monthly" | "yearly";
 };
 
+const inputSchema = z.object({
+  billing: z.enum(["monthly", "yearly"]).default("yearly"),
+});
+
 /**
- * Creates a Razorpay Order for the Pro plan (₹999).
- * Attaches user_id in notes so the webhook can activate Pro after payment.
+ * Creates a Razorpay Order for the Pro plan.
+ * Yearly: ₹999. Monthly: ₹99.
+ * Attaches user_id + billing in notes so the webhook can activate Pro after payment.
  */
 export const createRazorpayProOrder = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<CreateOrderResult> => {
+  .inputValidator((data: unknown) => inputSchema.parse(data ?? {}))
+  .handler(async ({ context, data }): Promise<CreateOrderResult> => {
     const keyId = process.env.RAZORPAY_KEY_ID;
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
     if (!keyId || !keySecret) throw new Error("Razorpay is not configured");
 
-    const amount = 100; // ₹1 in paise (TEST MODE)
+    const billing = data.billing;
+    const amount = billing === "yearly" ? 99900 : 9900; // paise: ₹999 / ₹99
     const currency = "INR";
-    const receipt = `pro_${context.userId.slice(0, 8)}_${Date.now()}`;
+    const receipt = `pro_${billing.slice(0, 1)}_${context.userId.slice(0, 8)}_${Date.now()}`;
 
     const auth = "Basic " + btoa(`${keyId}:${keySecret}`);
     const res = await fetch("https://api.razorpay.com/v1/orders", {
@@ -32,7 +41,7 @@ export const createRazorpayProOrder = createServerFn({ method: "POST" })
         amount,
         currency,
         receipt,
-        notes: { user_id: context.userId, plan: "pro" },
+        notes: { user_id: context.userId, plan: "pro", billing },
       }),
     });
     if (!res.ok) {
@@ -44,8 +53,8 @@ export const createRazorpayProOrder = createServerFn({ method: "POST" })
     // Fetch email for prefill (best-effort).
     let email: string | null = null;
     try {
-      const { data } = await context.supabase.auth.getUser();
-      email = data.user?.email ?? null;
+      const { data: u } = await context.supabase.auth.getUser();
+      email = u.user?.email ?? null;
     } catch {
       /* ignore */
     }
@@ -56,5 +65,6 @@ export const createRazorpayProOrder = createServerFn({ method: "POST" })
       amount: order.amount,
       currency: order.currency,
       userEmail: email,
+      billing,
     };
   });
