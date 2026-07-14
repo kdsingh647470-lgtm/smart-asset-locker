@@ -20,7 +20,7 @@ export const createRazorpayProOrder = createServerFn({ method: "POST" })
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
     if (!keyId || !keySecret) throw new Error("Razorpay is not configured");
 
-    const amount = 99900; // ₹999 in paise
+    const amount = 100; // ₹1 in paise (TEST MODE)
     const currency = "INR";
     const receipt = `pro_${context.userId.slice(0, 8)}_${Date.now()}`;
 
