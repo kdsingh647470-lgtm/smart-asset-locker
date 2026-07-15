@@ -3227,6 +3227,16 @@ function UpgradeModal({
         >
           {paying ? "Processing…" : payLabel}
         </button>
+        {channel === "play" && (
+          <button
+            type="button"
+            disabled={paying}
+            onClick={onRestore}
+            className="mt-2 w-full rounded-xl border border-border bg-surface-2 px-3 py-2 text-[12px] font-medium text-text-secondary disabled:opacity-60"
+          >
+            Restore purchases
+          </button>
+        )}
         {payMsg && (
           <div className="mt-2 rounded-md bg-surface-2 px-2.5 py-2 text-[11px] text-text-secondary">
             {payMsg}
