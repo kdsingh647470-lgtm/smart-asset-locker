@@ -35,7 +35,6 @@ import {
   purchaseProViaPlay,
   restorePlayPurchases,
 } from "@/lib/billing";
-import { useAuth } from "@/hooks/useAuth";
 import { listMyNotifications, markAllRead, type AppNotification } from "@/lib/notifications.functions";
 import { toast } from "sonner";
 import { EmailVerifyBanner } from "@/components/EmailVerifyBanner";
