@@ -29,6 +29,13 @@ import {
 import { buildReminders } from "@/lib/reminders";
 import { getMyPlan, redeemProCode } from "@/lib/plan.functions";
 import { createRazorpayProSubscription } from "@/lib/razorpay.functions";
+import {
+  billingChannel,
+  initRevenueCat,
+  purchaseProViaPlay,
+  restorePlayPurchases,
+} from "@/lib/billing";
+import { useAuth } from "@/hooks/useAuth";
 import { listMyNotifications, markAllRead, type AppNotification } from "@/lib/notifications.functions";
 import { toast } from "sonner";
 import { EmailVerifyBanner } from "@/components/EmailVerifyBanner";
@@ -3050,9 +3057,18 @@ function UpgradeModal({
   const [payMsg, setPayMsg] = useState<string | null>(null);
   const [billing, setBilling] = useState<"yearly" | "monthly">("yearly");
   const qc = useQueryClient();
+  const { user } = useAuth();
+  const channel = billingChannel();
 
   const priceLabel = billing === "yearly" ? "₹999 / year" : "₹99 / month";
-  const payLabel = billing === "yearly" ? "Pay ₹999 with Razorpay" : "Pay ₹99 with Razorpay";
+  const payLabel =
+    channel === "play"
+      ? billing === "yearly"
+        ? "Subscribe ₹999/yr via Google Play"
+        : "Subscribe ₹99/mo via Google Play"
+      : billing === "yearly"
+        ? "Pay ₹999 with Razorpay"
+        : "Pay ₹99 with Razorpay";
 
   async function loadRzp(): Promise<boolean> {
     if (typeof window === "undefined") return false;
@@ -3066,47 +3082,96 @@ function UpgradeModal({
     });
   }
 
+  function pollForPro(onDone: () => void, timeoutMsg: string) {
+    let tries = 0;
+    const t = setInterval(async () => {
+      tries++;
+      await qc.invalidateQueries({ queryKey: ["my-plan"] });
+      const fresh = qc.getQueryData<{ plan: string }>(["my-plan"]);
+      if (fresh?.plan === "pro" || tries > 10) {
+        clearInterval(t);
+        if (fresh?.plan === "pro") onDone();
+        else setPayMsg(timeoutMsg);
+      }
+    }, 1500);
+  }
+
+  async function payViaPlay() {
+    if (!user?.id) {
+      setPayMsg("Please sign in first.");
+      setPaying(false);
+      return;
+    }
+    const ready = await initRevenueCat(user.id);
+    if (!ready) {
+      setPayMsg("Google Play Billing not configured yet. Please try again later.");
+      setPaying(false);
+      return;
+    }
+    const res = await purchaseProViaPlay(billing);
+    if (!res.ok) {
+      setPayMsg(res.message ?? "Purchase failed");
+      setPaying(false);
+      return;
+    }
+    setPayMsg("Purchase complete — activating Pro…");
+    pollForPro(onProActivated, "Purchase received. Pro will activate shortly.");
+  }
+
+  async function payViaRazorpay() {
+    const ok = await loadRzp();
+    if (!ok) throw new Error("Could not load Razorpay. Check your connection.");
+    const sub = await createRazorpayProSubscription({ data: { billing } });
+    const rzp = new (window as any).Razorpay({
+      key: sub.keyId,
+      subscription_id: sub.subscriptionId,
+      name: "GharLog Pro",
+      description:
+        sub.billing === "yearly"
+          ? "Pro plan — billed ₹999/year"
+          : "Pro plan — billed ₹99/month",
+      prefill: sub.userEmail ? { email: sub.userEmail } : undefined,
+      theme: { color: "#0f766e" },
+      handler: () => {
+        setPayMsg("Subscription authorised — activating Pro…");
+        pollForPro(onProActivated, "Authorised. Pro will activate shortly — refresh in a moment.");
+      },
+      modal: { ondismiss: () => setPaying(false) },
+    });
+    rzp.on("payment.failed", (e: any) => {
+      setPayMsg(e?.error?.description ?? "Payment failed");
+      setPaying(false);
+    });
+    rzp.open();
+  }
+
   async function payNow() {
     setPayMsg(null);
     setPaying(true);
     try {
-      const ok = await loadRzp();
-      if (!ok) throw new Error("Could not load Razorpay. Check your connection.");
-      const sub = await createRazorpayProSubscription({ data: { billing } });
-      const rzp = new (window as any).Razorpay({
-        key: sub.keyId,
-        subscription_id: sub.subscriptionId,
-        name: "GharLog Pro",
-        description:
-          sub.billing === "yearly"
-            ? "Pro plan — billed ₹999/year"
-            : "Pro plan — billed ₹99/month",
-        prefill: sub.userEmail ? { email: sub.userEmail } : undefined,
-        theme: { color: "#0f766e" },
-        handler: () => {
-          // Subscription authorised. Webhook activates Pro server-side.
-          setPayMsg("Subscription authorised — activating Pro…");
-          let tries = 0;
-          const t = setInterval(async () => {
-            tries++;
-            await qc.invalidateQueries({ queryKey: ["my-plan"] });
-            const fresh = qc.getQueryData<{ plan: string }>(["my-plan"]);
-            if (fresh?.plan === "pro" || tries > 10) {
-              clearInterval(t);
-              if (fresh?.plan === "pro") onProActivated();
-              else setPayMsg("Authorised. Pro will activate shortly — refresh in a moment.");
-            }
-          }, 1500);
-        },
-        modal: { ondismiss: () => setPaying(false) },
-      });
-      rzp.on("payment.failed", (e: any) => {
-        setPayMsg(e?.error?.description ?? "Payment failed");
-        setPaying(false);
-      });
-      rzp.open();
+      if (channel === "play") await payViaPlay();
+      else await payViaRazorpay();
     } catch (e: any) {
       setPayMsg(e?.message ?? "Something went wrong");
+      setPaying(false);
+    }
+  }
+
+  async function onRestore() {
+    setPayMsg(null);
+    setPaying(true);
+    try {
+      if (user?.id) await initRevenueCat(user.id);
+      const res = await restorePlayPurchases();
+      if (res.ok) {
+        setPayMsg("Purchases restored — activating Pro…");
+        pollForPro(onProActivated, "Restored. Pro will activate shortly.");
+      } else {
+        setPayMsg(res.message ?? "Nothing to restore");
+        setPaying(false);
+      }
+    } catch (e: any) {
+      setPayMsg(e?.message ?? "Restore failed");
       setPaying(false);
     }
   }
