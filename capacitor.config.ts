@@ -1,19 +1,24 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
+// For LOCAL dev on device with hot reload from Lovable sandbox, uncomment
+// the `server` block. It MUST be removed/commented for any Play Store or
+// production build so the bundled `dist/` (or the live custom domain) is
+// used.
 const config: CapacitorConfig = {
-  appId: 'app.lovable.c891957348a04dc192460e16d4f87bfe',
-  appName: 'Smart Asset Locker',
+  appId: 'com.nesake.gharlog',
+  appName: 'GharLog',
   webDir: 'dist',
-  server: {
-    // Hot-reload from the Lovable sandbox. Remove `url` before building a
-    // store-ready release so the bundled `dist/` is used instead.
-    url: 'https://c8919573-48a0-4dc1-9246-0e16d4f87bfe.lovableproject.com?forceHideBadge=true',
-    cleartext: true,
+  // server: {
+  //   url: 'https://c8919573-48a0-4dc1-9246-0e16d4f87bfe.lovableproject.com?forceHideBadge=true',
+  //   cleartext: true,
+  // },
+  android: {
+    allowMixedContent: false,
   },
   plugins: {
     SplashScreen: {
       launchShowDuration: 1500,
-      backgroundColor: '#0F172A',
+      backgroundColor: '#0F1F4B',
       showSpinner: false,
     },
   },

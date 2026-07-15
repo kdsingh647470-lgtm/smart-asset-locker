@@ -24,6 +24,8 @@ import { Route as ApiScanInvoiceRouteImport } from './routes/api/scan-invoice'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AccountDeleteRouteImport } from './routes/account.delete'
 import { Route as ApiPublicSendDueRemindersRouteImport } from './routes/api/public/send-due-reminders'
+import { Route as ApiPublicRevenuecatWebhookRouteImport } from './routes/api/public/revenuecat-webhook'
+import { Route as ApiPublicRevenuecatConfigRouteImport } from './routes/api/public/revenuecat-config'
 import { Route as ApiPublicRazorpayWebhookRouteImport } from './routes/api/public/razorpay-webhook'
 import { Route as ApiPublicFirebaseConfigRouteImport } from './routes/api/public/firebase-config'
 
@@ -104,6 +106,18 @@ const ApiPublicSendDueRemindersRoute =
     path: '/api/public/send-due-reminders',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicRevenuecatWebhookRoute =
+  ApiPublicRevenuecatWebhookRouteImport.update({
+    id: '/api/public/revenuecat-webhook',
+    path: '/api/public/revenuecat-webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicRevenuecatConfigRoute =
+  ApiPublicRevenuecatConfigRouteImport.update({
+    id: '/api/public/revenuecat-config',
+    path: '/api/public/revenuecat-config',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicRazorpayWebhookRoute =
   ApiPublicRazorpayWebhookRouteImport.update({
     id: '/api/public/razorpay-webhook',
@@ -133,6 +147,8 @@ export interface FileRoutesByFullPath {
   '/invite/$token': typeof InviteTokenRoute
   '/api/public/firebase-config': typeof ApiPublicFirebaseConfigRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
+  '/api/public/revenuecat-config': typeof ApiPublicRevenuecatConfigRoute
+  '/api/public/revenuecat-webhook': typeof ApiPublicRevenuecatWebhookRoute
   '/api/public/send-due-reminders': typeof ApiPublicSendDueRemindersRoute
 }
 export interface FileRoutesByTo {
@@ -152,6 +168,8 @@ export interface FileRoutesByTo {
   '/invite/$token': typeof InviteTokenRoute
   '/api/public/firebase-config': typeof ApiPublicFirebaseConfigRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
+  '/api/public/revenuecat-config': typeof ApiPublicRevenuecatConfigRoute
+  '/api/public/revenuecat-webhook': typeof ApiPublicRevenuecatWebhookRoute
   '/api/public/send-due-reminders': typeof ApiPublicSendDueRemindersRoute
 }
 export interface FileRoutesById {
@@ -172,6 +190,8 @@ export interface FileRoutesById {
   '/invite/$token': typeof InviteTokenRoute
   '/api/public/firebase-config': typeof ApiPublicFirebaseConfigRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
+  '/api/public/revenuecat-config': typeof ApiPublicRevenuecatConfigRoute
+  '/api/public/revenuecat-webhook': typeof ApiPublicRevenuecatWebhookRoute
   '/api/public/send-due-reminders': typeof ApiPublicSendDueRemindersRoute
 }
 export interface FileRouteTypes {
@@ -193,6 +213,8 @@ export interface FileRouteTypes {
     | '/invite/$token'
     | '/api/public/firebase-config'
     | '/api/public/razorpay-webhook'
+    | '/api/public/revenuecat-config'
+    | '/api/public/revenuecat-webhook'
     | '/api/public/send-due-reminders'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -212,6 +234,8 @@ export interface FileRouteTypes {
     | '/invite/$token'
     | '/api/public/firebase-config'
     | '/api/public/razorpay-webhook'
+    | '/api/public/revenuecat-config'
+    | '/api/public/revenuecat-webhook'
     | '/api/public/send-due-reminders'
   id:
     | '__root__'
@@ -231,6 +255,8 @@ export interface FileRouteTypes {
     | '/invite/$token'
     | '/api/public/firebase-config'
     | '/api/public/razorpay-webhook'
+    | '/api/public/revenuecat-config'
+    | '/api/public/revenuecat-webhook'
     | '/api/public/send-due-reminders'
   fileRoutesById: FileRoutesById
 }
@@ -251,6 +277,8 @@ export interface RootRouteChildren {
   InviteTokenRoute: typeof InviteTokenRoute
   ApiPublicFirebaseConfigRoute: typeof ApiPublicFirebaseConfigRoute
   ApiPublicRazorpayWebhookRoute: typeof ApiPublicRazorpayWebhookRoute
+  ApiPublicRevenuecatConfigRoute: typeof ApiPublicRevenuecatConfigRoute
+  ApiPublicRevenuecatWebhookRoute: typeof ApiPublicRevenuecatWebhookRoute
   ApiPublicSendDueRemindersRoute: typeof ApiPublicSendDueRemindersRoute
 }
 
@@ -361,6 +389,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSendDueRemindersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/revenuecat-webhook': {
+      id: '/api/public/revenuecat-webhook'
+      path: '/api/public/revenuecat-webhook'
+      fullPath: '/api/public/revenuecat-webhook'
+      preLoaderRoute: typeof ApiPublicRevenuecatWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/revenuecat-config': {
+      id: '/api/public/revenuecat-config'
+      path: '/api/public/revenuecat-config'
+      fullPath: '/api/public/revenuecat-config'
+      preLoaderRoute: typeof ApiPublicRevenuecatConfigRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/razorpay-webhook': {
       id: '/api/public/razorpay-webhook'
       path: '/api/public/razorpay-webhook'
@@ -395,18 +437,10 @@ const rootRouteChildren: RootRouteChildren = {
   InviteTokenRoute: InviteTokenRoute,
   ApiPublicFirebaseConfigRoute: ApiPublicFirebaseConfigRoute,
   ApiPublicRazorpayWebhookRoute: ApiPublicRazorpayWebhookRoute,
+  ApiPublicRevenuecatConfigRoute: ApiPublicRevenuecatConfigRoute,
+  ApiPublicRevenuecatWebhookRoute: ApiPublicRevenuecatWebhookRoute,
   ApiPublicSendDueRemindersRoute: ApiPublicSendDueRemindersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
