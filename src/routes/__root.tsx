@@ -165,6 +165,12 @@ function RootShell({ children }: { children: ReactNode }) {
             __html: `try{var t=localStorage.getItem('gharlog:theme')||'system';var d=t==='dark'||(t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.classList.add('dark');}catch(e){}`,
           }}
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if('serviceWorker' in navigator){var h=location.hostname;var inFrame=window.top!==window.self;var isPreview=h.startsWith('id-preview--')||h.startsWith('preview--')||h.endsWith('.lovableproject.com')||h.endsWith('.lovableproject-dev.com')||h.endsWith('.beta.lovable.dev');var off=location.search.indexOf('sw=off')!==-1;if(!inFrame&&!isPreview&&!off){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){})});}else{navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){if(r.active&&r.active.scriptURL.endsWith('/sw.js'))r.unregister();})}).catch(function(){});}}}catch(e){}`,
+          }}
+        />
+
       </head>
       <body>
         {children}
