@@ -1,8 +1,22 @@
-[{
-  "relation": ["delegate_permission/common.handle_all_urls"],
-  "target": {
-    "namespace": "android_app",
-    "package_name": "com.nesake.gharlog.twa",
-    "sha256_cert_fingerprints": ["3A:16:27:D7:53:1D:FA:96:D4:42:19:2B:3C:20:14:2B:60:19:D7:9A:A2:34:E7:3C:2D:55:D6:26:40:CC:05:AE"]
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.nesake.gharlog.twa",
+      "sha256_cert_fingerprints": [
+        "3A:16:27:D7:53:1D:FA:96:D4:42:19:2B:3C:20:14:2B:60:19:D7:9A:A2:34:E7:3C:2D:55:D6:26:40:CC:05:AE"
+      ]
+    }
+  },
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.nesake.gharlog",
+      "sha256_cert_fingerprints": [
+        "B8:FE:03:D4:F6:F4:B9:03:7E:60:7D:33:A8:48:66:A3:40:A0:61:A9:B1:6A:E1:58:81:44:FB:A8:0C:44:E1:9C"
+      ]
+    }
   }
-}]
+]
