@@ -85,6 +85,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         content:
           "Track every appliance, document, warranty, insurance and service for your home in one encrypted vault. Built for India.",
       },
+      {
+        name: "google-site-verification",
+        content: "UnNGCGACulN7VQ_IZPwnAFYzXF0snqAcj1OAYC7aa0g",
+      },
       { name: "theme-color", content: "#0F1F4B" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
