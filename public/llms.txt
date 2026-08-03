@@ -7,3 +7,6 @@ GharLog helps Indian households track what they own, when warranties and insuran
 ## Pages
 
 - [Home](/): Product overview — dashboard, inventory, scan, locker, AI assistant, insurance and maintenance calendar.
+- [Home maintenance checklist for Indian homes](/guides/seasonal-maintenance-checklist): Month-by-month seasonal maintenance guide for Indian households.
+- [Support](/support): Help and contact.
+- [Privacy Policy](/privacy), [Terms](/terms), [Data Safety](/data-safety): Legal and data handling.
