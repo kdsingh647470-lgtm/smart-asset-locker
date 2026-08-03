@@ -20,6 +20,7 @@ import { Route as DataSafetyRouteImport } from './routes/data-safety'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
+import { Route as GuidesSeasonalMaintenanceChecklistRouteImport } from './routes/guides.seasonal-maintenance-checklist'
 import { Route as ApiScanInvoiceRouteImport } from './routes/api/scan-invoice'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AccountDeleteRouteImport } from './routes/account.delete'
@@ -85,6 +86,12 @@ const InviteTokenRoute = InviteTokenRouteImport.update({
   path: '/invite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuidesSeasonalMaintenanceChecklistRoute =
+  GuidesSeasonalMaintenanceChecklistRouteImport.update({
+    id: '/guides/seasonal-maintenance-checklist',
+    path: '/guides/seasonal-maintenance-checklist',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiScanInvoiceRoute = ApiScanInvoiceRouteImport.update({
   id: '/api/scan-invoice',
   path: '/api/scan-invoice',
@@ -144,6 +151,7 @@ export interface FileRoutesByFullPath {
   '/account/delete': typeof AccountDeleteRoute
   '/api/chat': typeof ApiChatRoute
   '/api/scan-invoice': typeof ApiScanInvoiceRoute
+  '/guides/seasonal-maintenance-checklist': typeof GuidesSeasonalMaintenanceChecklistRoute
   '/invite/$token': typeof InviteTokenRoute
   '/api/public/firebase-config': typeof ApiPublicFirebaseConfigRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
@@ -165,6 +173,7 @@ export interface FileRoutesByTo {
   '/account/delete': typeof AccountDeleteRoute
   '/api/chat': typeof ApiChatRoute
   '/api/scan-invoice': typeof ApiScanInvoiceRoute
+  '/guides/seasonal-maintenance-checklist': typeof GuidesSeasonalMaintenanceChecklistRoute
   '/invite/$token': typeof InviteTokenRoute
   '/api/public/firebase-config': typeof ApiPublicFirebaseConfigRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
@@ -187,6 +196,7 @@ export interface FileRoutesById {
   '/account/delete': typeof AccountDeleteRoute
   '/api/chat': typeof ApiChatRoute
   '/api/scan-invoice': typeof ApiScanInvoiceRoute
+  '/guides/seasonal-maintenance-checklist': typeof GuidesSeasonalMaintenanceChecklistRoute
   '/invite/$token': typeof InviteTokenRoute
   '/api/public/firebase-config': typeof ApiPublicFirebaseConfigRoute
   '/api/public/razorpay-webhook': typeof ApiPublicRazorpayWebhookRoute
@@ -210,6 +220,7 @@ export interface FileRouteTypes {
     | '/account/delete'
     | '/api/chat'
     | '/api/scan-invoice'
+    | '/guides/seasonal-maintenance-checklist'
     | '/invite/$token'
     | '/api/public/firebase-config'
     | '/api/public/razorpay-webhook'
@@ -231,6 +242,7 @@ export interface FileRouteTypes {
     | '/account/delete'
     | '/api/chat'
     | '/api/scan-invoice'
+    | '/guides/seasonal-maintenance-checklist'
     | '/invite/$token'
     | '/api/public/firebase-config'
     | '/api/public/razorpay-webhook'
@@ -252,6 +264,7 @@ export interface FileRouteTypes {
     | '/account/delete'
     | '/api/chat'
     | '/api/scan-invoice'
+    | '/guides/seasonal-maintenance-checklist'
     | '/invite/$token'
     | '/api/public/firebase-config'
     | '/api/public/razorpay-webhook'
@@ -274,6 +287,7 @@ export interface RootRouteChildren {
   AccountDeleteRoute: typeof AccountDeleteRoute
   ApiChatRoute: typeof ApiChatRoute
   ApiScanInvoiceRoute: typeof ApiScanInvoiceRoute
+  GuidesSeasonalMaintenanceChecklistRoute: typeof GuidesSeasonalMaintenanceChecklistRoute
   InviteTokenRoute: typeof InviteTokenRoute
   ApiPublicFirebaseConfigRoute: typeof ApiPublicFirebaseConfigRoute
   ApiPublicRazorpayWebhookRoute: typeof ApiPublicRazorpayWebhookRoute
@@ -361,6 +375,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/guides/seasonal-maintenance-checklist': {
+      id: '/guides/seasonal-maintenance-checklist'
+      path: '/guides/seasonal-maintenance-checklist'
+      fullPath: '/guides/seasonal-maintenance-checklist'
+      preLoaderRoute: typeof GuidesSeasonalMaintenanceChecklistRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/scan-invoice': {
       id: '/api/scan-invoice'
       path: '/api/scan-invoice'
@@ -434,6 +455,8 @@ const rootRouteChildren: RootRouteChildren = {
   AccountDeleteRoute: AccountDeleteRoute,
   ApiChatRoute: ApiChatRoute,
   ApiScanInvoiceRoute: ApiScanInvoiceRoute,
+  GuidesSeasonalMaintenanceChecklistRoute:
+    GuidesSeasonalMaintenanceChecklistRoute,
   InviteTokenRoute: InviteTokenRoute,
   ApiPublicFirebaseConfigRoute: ApiPublicFirebaseConfigRoute,
   ApiPublicRazorpayWebhookRoute: ApiPublicRazorpayWebhookRoute,
